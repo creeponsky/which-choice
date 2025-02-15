@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from "react";
-import { backgrounds } from "../config/constants";
+import { backgrounds, MAX_IMAGE_DIMENSION } from "../config/constants";
 import { ImageItem } from "../types/image";
 import { roundedRect } from "../utils/imageProcessing";
 
@@ -45,17 +45,182 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
     const [watermarkSize, setWatermarkSize] = useState(24);
     const [letterSpacing, setLetterSpacing] = useState(120);
     const [shadowIntensity, setShadowIntensity] = useState(24);
+    const [exportQuality, setExportQuality] = useState(0.8);
 
-    const downloadImage = () => {
+    // 添加一个通用的渲染函数
+    const renderCanvas = (
+        ctx: CanvasRenderingContext2D,
+        canvasWidth: number,
+        canvasHeight: number,
+        loadedImages: HTMLImageElement[],
+        maxHeight: number,
+        actualPadding: { top: number; right: number; bottom: number; left: number },
+        scale: number = 1,
+        shouldDrawBorder: boolean = true
+    ) => {
+        // Background handling
+        const bg = backgrounds.find(bg => bg.value === background);
+        if (bg?.value.includes('gradient')) {
+            const gradient = ctx.createLinearGradient(0, 0, canvasWidth, canvasHeight);
+            const colors = theme === 'dark' ? bg.dark : bg.light;
+            const colorMatches = colors.match(/#[a-f0-9]{6}/gi) || ['#ffffff'];
+
+            if (colorMatches.length === 2) {
+                gradient.addColorStop(0, colorMatches[0]);
+                gradient.addColorStop(1, colorMatches[1]);
+            } else if (colorMatches.length > 2) {
+                colorMatches.forEach((color, index) => {
+                    gradient.addColorStop(index / (colorMatches.length - 1), color);
+                });
+            }
+            ctx.fillStyle = gradient;
+        } else {
+            ctx.fillStyle = theme === 'dark' ? bg?.dark || '#1e1e1e' : bg?.light || '#ffffff';
+        }
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // Border (只在预览时绘制)
+        if (shouldDrawBorder) {
+            ctx.strokeStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, canvasWidth, canvasHeight);
+        }
+
+        let x = actualPadding.left;
+        loadedImages.forEach((img, index) => {
+            const aspectRatio = img.width / img.height;
+            const height = maxHeight;
+            const width = height * aspectRatio;
+
+            if (showShadow) {
+                ctx.save();
+                ctx.shadowColor = theme === 'dark' 
+                    ? `rgba(0, 0, 0, ${shadowIntensity / 50})` 
+                    : `rgba(0, 0, 0, ${shadowIntensity / 100})`;
+                ctx.shadowBlur = shadowIntensity * scale;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = (shadowIntensity / 2) * scale;
+                
+                ctx.fillStyle = theme === 'dark' ? '#2c2c2c' : '#ffffff';
+                
+                if (borderRadius > 0) {
+                    ctx.beginPath();
+                    roundedRect(ctx, x, actualPadding.top, width, height, borderRadius * scale);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(x, actualPadding.top, width, height);
+                }
+                ctx.restore();
+            }
+
+            ctx.save();
+            if (borderRadius > 0) {
+                ctx.beginPath();
+                roundedRect(ctx, x, actualPadding.top, width, height, borderRadius * scale);
+                ctx.clip();
+            }
+            ctx.drawImage(img, x, actualPadding.top, width, height);
+            ctx.restore();
+
+            const letterY = maxHeight + actualPadding.top + (letterSpacing * scale);
+
+            ctx.font = `bold ${fontSize * scale}px Inter`;
+            ctx.fillStyle = theme === 'dark' ? "#ffffff" : "#18181b";
+            ctx.textAlign = "center";
+            ctx.fillText(
+                String.fromCharCode(65 + index),
+                x + width / 2,
+                letterY
+            );
+
+            x += width + actualPadding.right;
+        });
+
+        if (showWatermark) {
+            const baseSize = Math.min(canvasWidth, canvasHeight);
+            const dynamicSize = Math.max(16, Math.round(baseSize * (watermarkSize / 1000)));
+
+            ctx.font = `bold ${dynamicSize}px system-ui, -apple-system, Inter`;
+            ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+            ctx.textAlign = 'right';
+            
+            // Add stroke for better visibility
+            ctx.strokeStyle = theme === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = dynamicSize / 8;
+            ctx.strokeText(
+                'which-choice.com',
+                canvasWidth - dynamicSize,
+                canvasHeight - dynamicSize
+            );
+            
+            ctx.fillText(
+                'which-choice.com',
+                canvasWidth - dynamicSize,
+                canvasHeight - dynamicSize
+            );
+        }
+    };
+
+    // 修改 downloadImage 函数
+    const downloadImage = async () => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas || images.length === 0) return;
+
+        const exportCanvas = document.createElement('canvas');
+        const ctx = exportCanvas.getContext('2d');
+        if (!ctx) return;
+
+        const loadedImages = await Promise.all(
+            images.map(img => {
+                return new Promise<HTMLImageElement>((resolve) => {
+                    const image = new Image();
+                    image.src = img.preview;
+                    image.onload = () => resolve(image);
+                });
+            })
+        );
+
+        const maxOriginalHeight = Math.min(Math.max(...loadedImages.map(img => img.height)), MAX_IMAGE_DIMENSION);
+        const actualPadding = {
+            top: Math.round((padding.top / 100) * maxOriginalHeight),
+            right: Math.round((padding.right / 100) * maxOriginalHeight),
+            bottom: Math.round((padding.bottom / 100) * maxOriginalHeight) + 60,
+            left: Math.round((padding.left / 100) * maxOriginalHeight)
+        };
+
+        const totalWidth = loadedImages.reduce((sum, img) => {
+            const aspectRatio = img.width / img.height;
+            return sum + (maxOriginalHeight * aspectRatio);
+        }, 0) + actualPadding.left + actualPadding.right + (images.length - 1) * actualPadding.right;
+
+        exportCanvas.width = Math.round(totalWidth);
+        exportCanvas.height = Math.round(maxOriginalHeight + actualPadding.top + actualPadding.bottom);
+
+        const scale = exportCanvas.width / canvas.width;
+        
+        renderCanvas(
+            ctx,
+            exportCanvas.width,
+            exportCanvas.height,
+            loadedImages,
+            maxOriginalHeight,
+            actualPadding,
+            scale,
+            false // 导出时不显示边框
+        );
 
         const link = document.createElement("a");
-        link.download = "combined-image.png";
-        link.href = canvas.toDataURL("image/png");
+        if (exportQuality < 1) {
+            link.download = "combined-image.jpg";
+            link.href = exportCanvas.toDataURL("image/jpeg", exportQuality);
+        } else {
+            link.download = "combined-image.png";
+            link.href = exportCanvas.toDataURL("image/png");
+        }
         link.click();
     };
 
+    // 修改 useEffect 中的 updateCanvas 函数
     useEffect(() => {
         const updateCanvas = async () => {
             const canvas = canvasRef.current;
@@ -72,18 +237,14 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                 })
             );
 
-            // Calculate base dimensions
             const maxHeight = Math.min(800, Math.max(...loadedImages.map(img => img.height)));
-
-            // Calculate actual padding (based on image size percentage)
             const actualPadding = {
                 top: Math.round((padding.top / 100) * maxHeight),
                 right: Math.round((padding.right / 100) * maxHeight),
-                bottom: Math.round((padding.bottom / 100) * maxHeight) + 60, // Extra space for letters
+                bottom: Math.round((padding.bottom / 100) * maxHeight) + 60,
                 left: Math.round((padding.left / 100) * maxHeight)
             };
 
-            // Calculate total width (including padding)
             const totalWidth = loadedImages.reduce((sum, img) => {
                 const aspectRatio = img.width / img.height;
                 return sum + (maxHeight * aspectRatio);
@@ -92,104 +253,16 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
             canvas.width = totalWidth;
             canvas.height = maxHeight + actualPadding.top + actualPadding.bottom;
 
-            // Background handling
-            const bg = backgrounds.find(bg => bg.value === background);
-            if (bg?.value.includes('gradient')) {
-                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-                const colors = theme === 'dark' ? bg.dark : bg.light;
-                const colorMatches = colors.match(/#[a-f0-9]{6}/gi) || ['#ffffff'];
-
-                if (colorMatches.length === 2) {
-                    // Two color gradient
-                    gradient.addColorStop(0, colorMatches[0]);
-                    gradient.addColorStop(1, colorMatches[1]);
-                } else if (colorMatches.length > 2) {
-                    // Multi-color gradient
-                    colorMatches.forEach((color, index) => {
-                        gradient.addColorStop(index / (colorMatches.length - 1), color);
-                    });
-                }
-                ctx.fillStyle = gradient;
-            } else {
-                ctx.fillStyle = theme === 'dark' ? bg?.dark || '#1e1e1e' : bg?.light || '#ffffff';
-            }
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Border
-            ctx.strokeStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-            let x = actualPadding.left;
-            loadedImages.forEach((img, index) => {
-                const aspectRatio = img.width / img.height;
-                const height = maxHeight;
-                const width = height * aspectRatio;
-
-                if (showShadow) {
-                    // 先绘制阴影
-                    ctx.save();
-                    ctx.shadowColor = theme === 'dark' 
-                        ? `rgba(0, 0, 0, ${shadowIntensity / 50})` 
-                        : `rgba(0, 0, 0, ${shadowIntensity / 100})`;
-                    ctx.shadowBlur = shadowIntensity;
-                    ctx.shadowOffsetX = 0;
-                    ctx.shadowOffsetY = shadowIntensity / 2;
-                    
-                    // 设置填充颜色为白色或者与背景相近的颜色
-                    ctx.fillStyle = theme === 'dark' ? '#2c2c2c' : '#ffffff';
-                    
-                    // 绘制带阴影的矩形
-                    if (borderRadius > 0) {
-                        ctx.beginPath();
-                        roundedRect(ctx, x, actualPadding.top, width, height, borderRadius);
-                        ctx.fill();
-                    } else {
-                        ctx.fillRect(x, actualPadding.top, width, height);
-                    }
-                    ctx.restore();
-                }
-
-                // 绘制实际图片
-                ctx.save();
-                if (borderRadius > 0) {
-                    ctx.beginPath();
-                    roundedRect(ctx, x, actualPadding.top, width, height, borderRadius);
-                    ctx.clip();
-                }
-                ctx.drawImage(img, x, actualPadding.top, width, height);
-                ctx.restore();
-
-
-                // 使用letterSpacing来控制字母与图片的距离
-                const letterY = maxHeight + actualPadding.top + letterSpacing;
-
-                ctx.font = `bold ${fontSize}px Inter`;
-                ctx.fillStyle = theme === 'dark' ? "#ffffff" : "#18181b";
-                ctx.textAlign = "center";
-                ctx.fillText(
-                    String.fromCharCode(65 + index),
-                    x + width / 2,
-                    letterY
-                );
-
-                x += width + actualPadding.right;
-            });
-
-            if (showWatermark) {
-                // Calculate dynamic watermark size based on canvas dimensions
-                const baseSize = Math.min(canvas.width, canvas.height);
-                const dynamicSize = Math.max(16, Math.round(baseSize * (watermarkSize / 1000))); // Convert slider value to relative size
-
-                ctx.font = `${dynamicSize}px Inter`;
-                ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)';
-                ctx.textAlign = 'right';
-                ctx.fillText(
-                    'which-choice.com',
-                    canvas.width - dynamicSize, // Adjust margin based on font size
-                    canvas.height - dynamicSize
-                );
-            }
+            renderCanvas(
+                ctx,
+                canvas.width,
+                canvas.height,
+                loadedImages,
+                maxHeight,
+                actualPadding,
+                1,
+                true // 预览时显示边框
+            );
         };
 
         updateCanvas();
@@ -201,18 +274,21 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                 <Card className="w-80 p-4">
                     <Tabs defaultValue="layout" className="w-full">
                         <TabsList className="grid w-full grid-cols-4">
-                            <TabsTrigger value="layout" className="p-2">
+                            <TabsTrigger value="layout">
                                 <Layout className="h-4 w-4" />
                             </TabsTrigger>
-                            <TabsTrigger value="style" className="p-2">
+                            <TabsTrigger value="style">
                                 <Palette className="h-4 w-4" />
                             </TabsTrigger>
-                            <TabsTrigger value="text" className="p-2">
+                            <TabsTrigger value="text">
                                 <Type className="h-4 w-4" />
                             </TabsTrigger>
-                            <TabsTrigger value="watermark" className="p-2">
+                            <TabsTrigger value="watermark">
                                 <ImageIcon className="h-4 w-4" />
                             </TabsTrigger>
+                            {/* <TabsTrigger value="export">
+                                <Download className="h-4 w-4" />
+                            </TabsTrigger> */}
                         </TabsList>
 
                         {/* 布局设置 */}
@@ -394,6 +470,23 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                                         disabled={!showWatermark}
                                         className="w-full"
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <SlidersHorizontal className="h-4 w-4" />
+                                        <span>Export Quality</span>
+                                    </div>
+                                    <Slider
+                                        value={[exportQuality * 100]}
+                                        onValueChange={([value]) => setExportQuality(value / 100)}
+                                        min={30}
+                                        max={100}
+                                        step={1}
+                                        className="w-full"
+                                    />
+                                    <div className="text-sm text-muted-foreground text-right">
+                                        {Math.round(exportQuality * 100)}%
+                                    </div>
                                 </div>
                             </div>
                         </TabsContent>

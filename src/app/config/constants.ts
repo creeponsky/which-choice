@@ -1,6 +1,6 @@
 import { Background } from "../types/image";
 
-export const MAX_IMAGE_DIMENSION = 1200;
+export const MAX_IMAGE_DIMENSION = 4000;
 
 export const backgrounds: Background[] = [
   { label: "Default", value: "bg-white", dark: "#1e1e1e", light: "#ffffff" },

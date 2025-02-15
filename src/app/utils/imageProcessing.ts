@@ -1,34 +1,40 @@
 import { MAX_IMAGE_DIMENSION } from "@/app/config/constants";
 
-export const compressImage = async (file: File): Promise<{ url: string; width: number; height: number }> => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const { width, height } = img;
-      let newWidth = width;
-      let newHeight = height;
+export const compressImage = async (
+    file: File,
+    quality: number = 0.8
+): Promise<{ url: string; width: number; height: number }> => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
 
-      if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
-        if (width > height) {
-          newWidth = MAX_IMAGE_DIMENSION;
-          newHeight = (height * MAX_IMAGE_DIMENSION) / width;
-        } else {
-          newHeight = MAX_IMAGE_DIMENSION;
-          newWidth = (width * MAX_IMAGE_DIMENSION) / height;
-        }
-      }
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
 
-      const canvas = document.createElement('canvas');
-      canvas.width = newWidth;
-      canvas.height = newHeight;
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0, newWidth, newHeight);
-      
-      const compressedUrl = canvas.toDataURL('image/jpeg', 0.9);
-      resolve({ url: compressedUrl, width: newWidth, height: newHeight });
-    };
-    img.src = URL.createObjectURL(file);
-  });
+            // 计算新的尺寸，保持宽高比
+            if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+                if (width > height) {
+                    height = Math.round((height * MAX_IMAGE_DIMENSION) / width);
+                    width = MAX_IMAGE_DIMENSION;
+                } else {
+                    width = Math.round((width * MAX_IMAGE_DIMENSION) / height);
+                    height = MAX_IMAGE_DIMENSION;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+
+            // 使用用户设置的压缩质量
+            const url = canvas.toDataURL('image/jpeg', quality);
+            resolve({ url, width, height });
+        };
+    });
 };
 
 export const roundedRect = (
