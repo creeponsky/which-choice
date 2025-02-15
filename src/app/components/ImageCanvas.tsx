@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import {
     Select,
     SelectContent,
@@ -11,40 +11,24 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Download } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+    CircleDot, CloudRain,
+    CornerUpLeft, Download, FileImage, Image as ImageIcon, Layout,
+    Palette, SlidersHorizontal, Square, TextCursor, Type
+} from "lucide-react";
 import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from "react";
 import { backgrounds } from "../config/constants";
 import { ImageItem } from "../types/image";
 import { roundedRect } from "../utils/imageProcessing";
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-    Layout,
-    Palette,
-    Type,
-    Image as ImageIcon,
-    Square,
-    SlidersHorizontal,
-    CloudRain,
-    CornerUpLeft,
-    CircleDot,
-    FileImage,
-    TextCursor
-} from "lucide-react";
 
 interface ImageCanvasProps {
     images: ImageItem[];
 }
 
 export function ImageCanvas({ images }: ImageCanvasProps) {
-    const { theme, setTheme } = useTheme();
+    const { theme } = useTheme();
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     const [background, setBackground] = useState(backgrounds[backgrounds.length - 1].value);

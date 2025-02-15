@@ -1,6 +1,6 @@
 'use client';
 
-import { backgrounds, MAX_IMAGE_DIMENSION } from "@/app/config/constants";
+import { MAX_IMAGE_DIMENSION } from "@/app/config/constants";
 import { ImageItem } from "@/app/types/image";
 import { compressImage } from "@/app/utils/imageProcessing";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -8,11 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { AlertCircle, Moon, Plus, Sun, Trash2, Upload } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ImageCanvas } from "./ImageCanvas";
 import { useTheme } from "next-themes";
-import { HandWrittenTitle } from "@/components/ui/hand-writing-text";
-import { BackgroundPaths } from "@/components/ui/background-paths";
+import { useCallback, useState } from "react";
+import { ImageCanvas } from "./ImageCanvas";
 
 export function PageContent() {
     const { theme, setTheme } = useTheme();

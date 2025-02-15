@@ -11,6 +11,11 @@ const defaultUrl = process?.env?.NEXT_PUBLIC_SITE_URL ??
 const siteUrl = defaultUrl.startsWith('http')
   ? defaultUrl
   : `https://${defaultUrl}`;
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: 'Which Choice - Image Comparison Tool',
@@ -56,10 +61,6 @@ export const metadata = {
     images: [siteUrl + "/assets/images/og-image.png"],
     creator: "@creeponsky", // 请替换成你的 Twitter 用户名
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-  },
   robots: {
     index: true,
     follow: true,
@@ -73,12 +74,6 @@ export const metadata = {
   },
   icons: {
     icon: "/assets/svg/favicon.svg",
-    shortcut: "/assets/svg/favicon.svg",
-    apple: "/assets/svg/favicon.svg",
-    other: {
-      rel: "apple-touch-icon-precomposed",
-      url: "/assets/svg/favicon.svg",
-    },
   },
 };
 export default function RootLayout({
@@ -88,7 +83,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        <link rel="icon" type="image/svg+xml" href="/assets/svg/favicon.svg" />
+        <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
+      </head>
       <body className={inter.className} suppressHydrationWarning={true}>
         <ThemeProvider
           attribute="class"
@@ -96,7 +94,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-            {children}
+          {children}
         </ThemeProvider>
       </body>
     </html>
