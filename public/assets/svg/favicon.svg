@@ -1,0 +1,16 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="16" cy="16" r="16" fill="#3B82F6"/>
+  
+  <!-- 左侧图片框 -->
+  <rect x="6" y="8" width="8" height="8" rx="2" stroke="white" stroke-width="2"/>
+  
+  <!-- 右侧图片框 -->
+  <rect x="18" y="8" width="8" height="8" rx="2" stroke="white" stroke-width="2"/>
+  
+  <!-- 选项标记 A -->
+  <text x="10" y="24" font-family="Arial" font-size="10" font-weight="bold" fill="white" text-anchor="middle">A</text>
+  
+  <!-- 选项标记 B -->
+  <text x="22" y="24" font-family="Arial" font-size="10" font-weight="bold" fill="white" text-anchor="middle">B</text>
+</svg> 
