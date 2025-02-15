@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@/components/theme-provider";
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { Analytics } from "@vercel/analytics/react"
 
 const inter = Inter({ subsets: ['latin'] });
 const defaultUrl = process?.env?.NEXT_PUBLIC_SITE_URL ??
