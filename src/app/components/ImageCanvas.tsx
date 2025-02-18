@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from "react";
 import { backgrounds, MAX_IMAGE_DIMENSION } from "../config/constants";
 import { ImageItem } from "../types/image";
 import { roundedRect } from "../utils/imageProcessing";
+import { Input } from "@/components/ui/input";
 
 interface ImageCanvasProps {
     images: ImageItem[];
@@ -46,6 +47,12 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
     const [letterSpacing, setLetterSpacing] = useState(120);
     const [shadowIntensity, setShadowIntensity] = useState(24);
     const [exportQuality, setExportQuality] = useState(0.8);
+    const [letters, setLetters] = useState<string[]>([]);
+
+    // Initialize letters when images change
+    useEffect(() => {
+        setLetters(images.map((_, index) => String.fromCharCode(65 + index)));
+    }, [images.length]); // Only run when number of images changes
 
     // 添加一个通用的渲染函数
     const renderCanvas = (
@@ -94,15 +101,15 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
 
             if (showShadow) {
                 ctx.save();
-                ctx.shadowColor = theme === 'dark' 
-                    ? `rgba(0, 0, 0, ${shadowIntensity / 50})` 
+                ctx.shadowColor = theme === 'dark'
+                    ? `rgba(0, 0, 0, ${shadowIntensity / 50})`
                     : `rgba(0, 0, 0, ${shadowIntensity / 100})`;
                 ctx.shadowBlur = shadowIntensity * scale;
                 ctx.shadowOffsetX = 0;
                 ctx.shadowOffsetY = (shadowIntensity / 2) * scale;
-                
+
                 ctx.fillStyle = theme === 'dark' ? '#2c2c2c' : '#ffffff';
-                
+
                 if (borderRadius > 0) {
                     ctx.beginPath();
                     roundedRect(ctx, x, actualPadding.top, width, height, borderRadius * scale);
@@ -122,13 +129,15 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
             ctx.drawImage(img, x, actualPadding.top, width, height);
             ctx.restore();
 
+            const letter = letters[index] || String.fromCharCode(65 + index);
+
             const letterY = maxHeight + actualPadding.top + (letterSpacing * scale);
 
             ctx.font = `bold ${fontSize * scale}px Inter`;
             ctx.fillStyle = theme === 'dark' ? "#ffffff" : "#18181b";
             ctx.textAlign = "center";
             ctx.fillText(
-                String.fromCharCode(65 + index),
+                letter,
                 x + width / 2,
                 letterY
             );
@@ -143,7 +152,7 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
             ctx.font = `bold ${dynamicSize}px system-ui, -apple-system, Inter`;
             ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
             ctx.textAlign = 'right';
-            
+
             // Add stroke for better visibility
             ctx.strokeStyle = theme === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)';
             ctx.lineWidth = dynamicSize / 8;
@@ -152,7 +161,7 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                 canvasWidth - dynamicSize,
                 canvasHeight - dynamicSize
             );
-            
+
             ctx.fillText(
                 'which-choice.com',
                 canvasWidth - dynamicSize,
@@ -197,7 +206,7 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
         exportCanvas.height = Math.round(maxOriginalHeight + actualPadding.top + actualPadding.bottom);
 
         const scale = exportCanvas.width / canvas.width;
-        
+
         renderCanvas(
             ctx,
             exportCanvas.width,
@@ -266,8 +275,9 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
         };
 
         updateCanvas();
-    }, [images, background, showShadow, borderRadius, theme, padding, fontSize, showWatermark, watermarkSize, letterSpacing, shadowIntensity]);
-
+    }, [images, background, showShadow, borderRadius, theme, padding, fontSize,
+        showWatermark, watermarkSize, letterSpacing, shadowIntensity, letters]);
+    const [testValue, setTestValue] = useState("sdadsa");
     return (
         <div className="space-y-8">
             <div className="flex gap-8">
@@ -374,7 +384,7 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                                             className="data-[state=checked]:bg-primary"
                                         />
                                     </div>
-                                    
+
                                     {showShadow && (
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -418,7 +428,9 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                                     </div>
                                     <Slider
                                         value={[fontSize]}
-                                        onValueChange={([value]) => setFontSize(value)}
+                                        onValueChange={([value]) => {
+                                            setFontSize(value);
+                                        }}
                                         min={12}
                                         max={72}
                                         step={1}
@@ -433,12 +445,33 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                                     </div>
                                     <Slider
                                         value={[letterSpacing]}
-                                        onValueChange={([value]) => setLetterSpacing(value)}
+                                        onValueChange={([value]) => {
+                                            setLetterSpacing(value);
+                                        }}
                                         min={100}
                                         max={300}
                                         step={1}
                                         className="w-full"
                                     />
+                                </div>
+
+                                <div className="grid grid-cols-4 gap-2">
+                                    {letters.map((letter, index) => (
+                                        <Input
+                                            key={index}
+                                            type="text"
+                                            value={letter}
+                                            onChange={(e) => {
+                                                const newValue = e.target.value;
+                                                setLetters(prevLetters => {
+                                                    const newLetters = [...prevLetters];
+                                                    newLetters[index] = newValue || String.fromCharCode(65 + index);
+                                                    return newLetters;
+                                                });
+                                            }}
+                                            className="h-8 text-center px-0"
+                                        />
+                                    ))}
                                 </div>
                             </div>
                         </TabsContent>
