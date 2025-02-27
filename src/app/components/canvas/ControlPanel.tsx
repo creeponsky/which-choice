@@ -130,8 +130,12 @@ export function ControlPanel({
                 <TabsContent value="layout" className="mt-4">
                     <LayoutSettings 
                         padding={settings.padding}
-                        setPadding={(padding) => updateSettings('padding', padding)}
+                        setPadding={(newPadding) => updateSettings('padding', newPadding)}
                         hasTitle={Boolean(settings.title.text)}
+                        layoutDirection={settings.layoutDirection}
+                        setLayoutDirection={(direction) => updateSettings('layoutDirection', direction)}
+                        textPosition={settings.textPosition}
+                        setTextPosition={(position) => updateSettings('textPosition', position)}
                     />
                 </TabsContent>
 
@@ -162,6 +166,22 @@ export function ControlPanel({
                         letters={letters}
                         setLetters={setLetters}
                         imagesCount={imagesCount}
+                        textColor={settings.text.color}
+                        setTextColor={(value) => updateNestedSettings('text', 'color', value)}
+                        textGradientColor={settings.text.gradientColor}
+                        setTextGradientColor={(value) => updateNestedSettings('text', 'gradientColor', value)}
+                        useGradient={settings.text.useGradient}
+                        setUseGradient={(value) => updateNestedSettings('text', 'useGradient', value)}
+                        letterColors={settings.text.letterColors || {}}
+                        setLetterColors={(value) => {
+                            if (typeof value === 'function') {
+                                const newValue = value(settings.text.letterColors || {});
+                                updateNestedSettings('text', 'letterColors', newValue);
+                            } else {
+                                updateNestedSettings('text', 'letterColors', value);
+                            }
+                        }}
+                        
                     />
                 </TabsContent>
 

@@ -23,6 +23,9 @@ export const drawPatterns = (
     settings: CanvasSettings,
     scale: number = 1
 ) => {
+    // 添加防御性检查
+    if (!settings || !settings.pattern) return;
+    
     const { pattern } = settings;
     
     if (!pattern.show || pattern.type === 'none') return;
@@ -130,7 +133,8 @@ export const renderCanvas = (
     canvasWidth: number,
     canvasHeight: number,
     loadedImages: HTMLImageElement[],
-    maxHeight: number,
+    maxHeight: number, // 横向布局时使用
+    maxWidth: number, // 纵向布局时使用
     actualPadding: { top: number; right: number; bottom: number; left: number },
     theme: string | undefined,
     settings: CanvasSettings,
@@ -228,72 +232,247 @@ export const renderCanvas = (
         settings.title.topSpacing * scale + 
         settings.title.bottomSpacing * scale
     ) : 0;
-                                
-    // Adjust image Y position to account for title
-    const imageY = actualPadding.top + (settings.title.text ? titleSpace : 0);
-
-    let x = actualPadding.left;
-    loadedImages.forEach((img, index) => {
-        const aspectRatio = img.width / img.height;
-        const height = maxHeight;
-        const width = height * aspectRatio;
-
-        // Add shadow if enabled
-        if (settings.showShadow) {
+    
+    // 根据布局方向和字母位置进行不同的渲染
+    if (settings.layoutDirection === "horizontal") {
+        // 水平布局逻辑
+        let x = actualPadding.left;
+        
+        // 如果文字在顶部，计算图片应该下移的距离
+        const baseLetterHeight = Math.max(settings.text.fontSize, maxHeight * 0.1) * 1.2;
+        const verticalLetterGap = (settings.text.letterSpacing / 300) * maxHeight * 0.5;
+        const totalLetterOffset = settings.textPosition === "top" ? (baseLetterHeight * scale + verticalLetterGap * scale) : 0;
+        
+        // 图片的Y坐标，考虑标题空间和文字位置
+        const imageY = actualPadding.top + (settings.title.text ? titleSpace : 0) + totalLetterOffset;
+        
+        loadedImages.forEach((img, index) => {
+            const aspectRatio = img.width / img.height;
+            const height = maxHeight;
+            const width = height * aspectRatio;
+            
+            // 添加阴影（如果启用）
+            if (settings.showShadow) {
+                ctx.save();
+                ctx.shadowColor = theme === 'dark'
+                    ? `rgba(0, 0, 0, ${settings.shadowIntensity / 50})`
+                    : `rgba(0, 0, 0, ${settings.shadowIntensity / 100})`;
+                ctx.shadowBlur = settings.shadowIntensity * scale;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = (settings.shadowIntensity / 2) * scale;
+                
+                ctx.fillStyle = theme === 'dark' ? '#2c2c2c' : '#ffffff';
+                
+                if (settings.borderRadius > 0) {
+                    ctx.beginPath();
+                    roundedRect(ctx, x, imageY, width, height, settings.borderRadius * scale);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(x, imageY, width, height);
+                }
+                ctx.restore();
+            }
+            
+            // 绘制带有圆角的实际图像
             ctx.save();
-            ctx.shadowColor = theme === 'dark'
-                ? `rgba(0, 0, 0, ${settings.shadowIntensity / 50})`
-                : `rgba(0, 0, 0, ${settings.shadowIntensity / 100})`;
-            ctx.shadowBlur = settings.shadowIntensity * scale;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = (settings.shadowIntensity / 2) * scale;
-
-            ctx.fillStyle = theme === 'dark' ? '#2c2c2c' : '#ffffff';
-
             if (settings.borderRadius > 0) {
                 ctx.beginPath();
                 roundedRect(ctx, x, imageY, width, height, settings.borderRadius * scale);
-                ctx.fill();
-            } else {
-                ctx.fillRect(x, imageY, width, height);
+                ctx.clip();
             }
+            ctx.drawImage(img, x, imageY, width, height);
             ctx.restore();
-        }
-
-        // Draw the actual image with clipping for rounded corners
-        ctx.save();
-        if (settings.borderRadius > 0) {
-            ctx.beginPath();
-            roundedRect(ctx, x, imageY, width, height, settings.borderRadius * scale);
-            ctx.clip();
-        }
-        ctx.drawImage(img, x, imageY, width, height);
-        ctx.restore();
-
-        const letter = settings.text.letters?.[index] || String.fromCharCode(65 + index);
-
-        // 修改字母大小计算逻辑，确保视觉一致性
-        // 先基于缩小后的画布(scale=1)计算基础字体大小
-        const baseWidth = width / scale;
-        const baseFontSize = Math.min(
-            Math.max(settings.text.fontSize, baseWidth * 0.15), 
-            settings.text.fontSize * 1.5
-        );
+            
+            const letter = settings.text.letters?.[index] || String.fromCharCode(65 + index);
+            
+            // 获取字母颜色设置
+            const letterColorSettings = settings.text.letterColors?.[index];
+            const useGradient = letterColorSettings?.useGradient !== undefined 
+                ? letterColorSettings.useGradient 
+                : settings.text.useGradient;
+            
+            // 计算字母大小
+            const baseWidth = width / scale;
+            const baseFontSize = Math.min(
+                Math.max(settings.text.fontSize, baseWidth * 0.15), 
+                settings.text.fontSize * 1.5
+            );
+            const letterFontSize = baseFontSize * scale;
+            
+            // 根据文字位置设置纵向位置
+            ctx.font = `bold ${letterFontSize}px Inter`;
+            
+            if (useGradient) {
+                // 使用渐变色
+                const gradientX = x + width / 2;
+                const gradientWidth = width * 0.8;
+                const gradient = ctx.createLinearGradient(
+                    gradientX - gradientWidth / 2, 
+                    0, 
+                    gradientX + gradientWidth / 2, 
+                    0
+                );
+                
+                const color1 = letterColorSettings?.color || settings.text.color;
+                const color2 = letterColorSettings?.gradientColor || settings.text.gradientColor;
+                
+                gradient.addColorStop(0, color1);
+                gradient.addColorStop(1, color2);
+                ctx.fillStyle = gradient;
+            } else {
+                // 使用纯色
+                ctx.fillStyle = letterColorSettings?.color || settings.text.color;
+            }
+            
+            ctx.textAlign = "center";
+            
+            if (settings.textPosition === "top") {
+                // 在图片上方显示字母
+                const letterY = imageY - verticalLetterGap * scale;
+                ctx.fillText(letter, x + width / 2, letterY);
+            } else {
+                // 在图片下方显示字母
+                const letterY = imageY + height + verticalLetterGap * scale + letterFontSize * 0.8;
+                ctx.fillText(letter, x + width / 2, letterY);
+            }
+            
+            x += width + actualPadding.right;
+        });
+    } else {
+        // 纵向布局逻辑
+        let y = actualPadding.top + (settings.title.text ? titleSpace : 0);
+        const imageX = actualPadding.left;
         
-        // 然后应用缩放
-        const letterFontSize = baseFontSize * scale;
-        
-        // 计算垂直间距
-        const verticalGap = (settings.text.letterSpacing / 300) * height * 0.5;
-        const letterY = imageY + height + verticalGap + letterFontSize * 0.8;
-
-        ctx.font = `bold ${letterFontSize}px Inter`;
-        ctx.fillStyle = theme === 'dark' ? "#ffffff" : "#18181b";
-        ctx.textAlign = "center";
-        ctx.fillText(letter, x + width / 2, letterY);
-
-        x += width + actualPadding.right;
-    });
+        loadedImages.forEach((img, index) => {
+            const aspectRatio = img.width / img.height;
+            const width = maxWidth;
+            const height = width / aspectRatio;
+            
+            // 计算字母大小
+            const baseWidth = width / scale;
+            const baseFontSize = Math.min(
+                Math.max(settings.text.fontSize, baseWidth * 0.15), 
+                settings.text.fontSize * 1.5
+            );
+            const letterFontSize = baseFontSize * scale;
+            const verticalGap = (settings.text.letterSpacing / 300) * height * 0.5;
+            
+            // 绘制字母（如果位置是top）
+            if (settings.textPosition === "top") {
+                const letter = settings.text.letters?.[index] || String.fromCharCode(65 + index);
+                
+                // 获取字母颜色设置
+                const letterColorSettings = settings.text.letterColors?.[index];
+                const useGradient = letterColorSettings?.useGradient !== undefined 
+                    ? letterColorSettings.useGradient 
+                    : settings.text.useGradient;
+                
+                ctx.font = `bold ${letterFontSize}px Inter`;
+                
+                if (useGradient) {
+                    // 使用渐变色
+                    const gradientX = imageX + width / 2;
+                    const gradientWidth = width * 0.8;
+                    const gradient = ctx.createLinearGradient(
+                        gradientX - gradientWidth / 2, 
+                        0, 
+                        gradientX + gradientWidth / 2, 
+                        0
+                    );
+                    
+                    const color1 = letterColorSettings?.color || settings.text.color;
+                    const color2 = letterColorSettings?.gradientColor || settings.text.gradientColor;
+                    
+                    gradient.addColorStop(0, color1);
+                    gradient.addColorStop(1, color2);
+                    ctx.fillStyle = gradient;
+                } else {
+                    // 使用纯色
+                    ctx.fillStyle = letterColorSettings?.color || settings.text.color;
+                }
+                
+                ctx.textAlign = "center";
+                ctx.fillText(letter, imageX + width / 2, y + letterFontSize * 0.8);
+                
+                // 调整图片位置，为顶部字母留出空间
+                y += letterFontSize + verticalGap;
+            }
+            
+            // 绘制带有阴影的图片背景
+            if (settings.showShadow) {
+                ctx.save();
+                ctx.shadowColor = theme === 'dark'
+                    ? `rgba(0, 0, 0, ${settings.shadowIntensity / 50})`
+                    : `rgba(0, 0, 0, ${settings.shadowIntensity / 100})`;
+                ctx.shadowBlur = settings.shadowIntensity * scale;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = (settings.shadowIntensity / 2) * scale;
+                
+                ctx.fillStyle = theme === 'dark' ? '#2c2c2c' : '#ffffff';
+                
+                if (settings.borderRadius > 0) {
+                    ctx.beginPath();
+                    roundedRect(ctx, imageX, y, width, height, settings.borderRadius * scale);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(imageX, y, width, height);
+                }
+                ctx.restore();
+            }
+            
+            // 绘制带有圆角的实际图像
+            ctx.save();
+            if (settings.borderRadius > 0) {
+                ctx.beginPath();
+                roundedRect(ctx, imageX, y, width, height, settings.borderRadius * scale);
+                ctx.clip();
+            }
+            ctx.drawImage(img, imageX, y, width, height);
+            ctx.restore();
+            
+            // 绘制字母（如果位置是bottom）
+            if (settings.textPosition === "bottom") {
+                const letter = settings.text.letters?.[index] || String.fromCharCode(65 + index);
+                
+                // 获取字母颜色设置
+                const letterColorSettings = settings.text.letterColors?.[index];
+                const useGradient = letterColorSettings?.useGradient !== undefined 
+                    ? letterColorSettings.useGradient 
+                    : settings.text.useGradient;
+                
+                ctx.font = `bold ${letterFontSize}px Inter`;
+                
+                if (useGradient) {
+                    // 使用渐变色
+                    const gradientX = imageX + width / 2;
+                    const gradientWidth = width * 0.8;
+                    const gradient = ctx.createLinearGradient(
+                        gradientX - gradientWidth / 2, 
+                        0, 
+                        gradientX + gradientWidth / 2, 
+                        0
+                    );
+                    
+                    const color1 = letterColorSettings?.color || settings.text.color;
+                    const color2 = letterColorSettings?.gradientColor || settings.text.gradientColor;
+                    
+                    gradient.addColorStop(0, color1);
+                    gradient.addColorStop(1, color2);
+                    ctx.fillStyle = gradient;
+                } else {
+                    // 使用纯色
+                    ctx.fillStyle = letterColorSettings?.color || settings.text.color;
+                }
+                
+                ctx.textAlign = "center";
+                ctx.fillText(letter, imageX + width / 2, y + height + verticalGap + letterFontSize * 0.8);
+            }
+            
+            // 为下一张图片更新Y坐标
+            y += height + actualPadding.bottom;
+        });
+    }
+    
     if (settings.showWatermark) {
         const baseSize = Math.min(canvasWidth, canvasHeight);
         const dynamicSize = Math.max(16, Math.round(baseSize * (settings.watermarkSize / 1000)));

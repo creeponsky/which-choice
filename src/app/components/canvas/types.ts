@@ -30,6 +30,14 @@ export interface CanvasSettings {
         fontSize: number;
         letterSpacing: number;
         letters?: string[];
+        color: string;
+        gradientColor: string;
+        useGradient: boolean;
+        letterColors?: Record<number, {
+            color: string;
+            gradientColor?: string;
+            useGradient?: boolean;
+        }>;
     };
     
     // Title settings
@@ -67,6 +75,12 @@ export interface CanvasSettings {
         padding: number;
         borderRadius: number;
     };
+    
+    // 添加布局类型设置
+    layoutDirection: "horizontal" | "vertical";
+    
+    // 文字位置设置
+    textPosition: "top" | "bottom";
 }
 
 // 默认设置
@@ -96,6 +110,10 @@ export const defaultCanvasSettings: CanvasSettings = {
     text: {
         fontSize: 88,
         letterSpacing: 120,
+        color: "#ffffff", // 默认白色
+        gradientColor: "#cccccc", // 默认浅灰色渐变
+        useGradient: false,
+        letterColors: {},
     },
     
     title: {
@@ -139,5 +157,8 @@ export const defaultCanvasSettings: CanvasSettings = {
         color: "#ffffff",
         padding: 20,
         borderRadius: 36
-    }
+    },
+    
+    layoutDirection: "horizontal",
+    textPosition: "bottom"
 }; 
