@@ -20,12 +20,12 @@ export interface CanvasTitle {
   text: string;
   fontSize: number;
   color: string;
-  gradientColor?: string;
+  gradientColor: string;
   useGradient: boolean;
 }
 
 export interface BackgroundPattern {
-  type: 'none' | 'grid' | 'dots' | 'lines';
+  type: "grid" | "dots" | "lines" | "none";
   color: string;
   spacing: number;
   size: number;

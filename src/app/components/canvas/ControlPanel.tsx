@@ -1,0 +1,144 @@
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+    CircleDot, CloudRain, CornerUpLeft, 
+    Layout, Palette, SlidersHorizontal, Square, TextCursor, Type,
+    Text, LayoutGrid, Dot, ArrowDownUp
+} from "lucide-react";
+import { useTheme } from 'next-themes';
+import { useEffect } from "react";
+import { LayoutSettings } from "./panels/LayoutSettings";
+import { StyleSettings } from "./panels/StyleSettings";
+import { TextSettings } from "./panels/TextSettings";
+import { TitleSettings } from "./panels/TitleSettings";
+import { PatternSettings } from "./panels/PatternSettings";
+import { CanvasSettings } from "./types";
+
+interface ControlPanelProps {
+    settings: CanvasSettings;
+    setSettings: React.Dispatch<React.SetStateAction<CanvasSettings>>;
+    letters: string[];
+    setLetters: React.Dispatch<React.SetStateAction<string[]>>;
+    imagesCount: number;
+}
+
+export function ControlPanel({ 
+    settings, 
+    setSettings,
+    letters,
+    setLetters,
+    imagesCount 
+}: ControlPanelProps) {
+    const { theme } = useTheme();
+    
+    // Ensure title colors are in sync with theme
+    useEffect(() => {
+        setSettings(prev => ({
+            ...prev,
+            title: {
+                ...prev.title,
+                color: theme === 'dark' ? "#ffffff" : "#18181b",
+                gradientColor: theme === 'dark' ? "#cccccc" : "#666666"
+            }
+        }));
+    }, [theme, setSettings]);
+
+    // Update specific settings
+    const updateSettings = <K extends keyof CanvasSettings>(
+        key: K,
+        value: CanvasSettings[K]
+    ) => {
+        setSettings(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    };
+
+    // Update nested settings
+    const updateNestedSettings = <
+        K extends keyof CanvasSettings,
+        N extends keyof CanvasSettings[K]
+    >(
+        key: K,
+        nestedKey: N,
+        value: CanvasSettings[K][N]
+    ) => {
+        setSettings(prev => ({
+            ...prev,
+            [key]: {
+                ...(prev[key] as any),
+                [nestedKey]: value
+            }
+        }));
+    };
+
+    return (
+        <Card className="w-80 p-4">
+            <Tabs defaultValue="layout" className="w-full">
+                <TabsList className="grid w-full grid-cols-5">
+                    <TabsTrigger value="layout">
+                        <Layout className="h-4 w-4" />
+                    </TabsTrigger>
+                    <TabsTrigger value="style">
+                        <Palette className="h-4 w-4" />
+                    </TabsTrigger>
+                    <TabsTrigger value="text">
+                        <Type className="h-4 w-4" />
+                    </TabsTrigger>
+                    <TabsTrigger value="title">
+                        <Text className="h-4 w-4" />
+                    </TabsTrigger>
+                    <TabsTrigger value="pattern">
+                        <LayoutGrid className="h-4 w-4" />
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* 布局设置 */}
+                <TabsContent value="layout" className="mt-4">
+                    <LayoutSettings 
+                        padding={settings.padding}
+                        setPadding={(padding) => updateSettings('padding', padding)}
+                    />
+                </TabsContent>
+
+                {/* 样式设置 */}
+                <TabsContent value="style" className="mt-4">
+                    <StyleSettings 
+                        settings={settings}
+                        updateSettings={updateSettings}
+                        theme={theme}
+                    />
+                </TabsContent>
+
+                {/* 文本设置 */}
+                <TabsContent value="text" className="mt-4">
+                    <TextSettings 
+                        fontSize={settings.text.fontSize}
+                        setFontSize={(value) => updateNestedSettings('text', 'fontSize', value)}
+                        letterSpacing={settings.text.letterSpacing}
+                        setLetterSpacing={(value) => updateNestedSettings('text', 'letterSpacing', value)}
+                        letters={letters}
+                        setLetters={setLetters}
+                        imagesCount={imagesCount}
+                    />
+                </TabsContent>
+
+                {/* 标题设置 */}
+                <TabsContent value="title" className="mt-4">
+                    <TitleSettings
+                        titleSettings={settings.title}
+                        updateTitleSettings={(key, value) => updateNestedSettings('title', key, value)}
+                    />
+                </TabsContent>
+
+                {/* 图案设置 */}
+                <TabsContent value="pattern" className="mt-4">
+                    <PatternSettings 
+                        patternSettings={settings.pattern}
+                        updatePatternSettings={(key, value) => updateNestedSettings('pattern', key, value)}
+                    />
+                </TabsContent>
+            </Tabs>
+        </Card>
+    );
+} 
