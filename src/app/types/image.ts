@@ -14,4 +14,19 @@ export interface Background {
   value: string;
   dark: string;
   light: string;
-} 
+}
+
+export interface CanvasTitle {
+  text: string;
+  fontSize: number;
+  color: string;
+  gradientColor?: string;
+  useGradient: boolean;
+}
+
+export interface BackgroundPattern {
+  type: 'none' | 'grid' | 'dots' | 'lines';
+  color: string;
+  spacing: number;
+  size: number;
+}

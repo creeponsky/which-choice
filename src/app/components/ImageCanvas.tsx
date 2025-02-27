@@ -2,6 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ColorPicker } from "@/components/ui/color-picker";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -13,16 +16,16 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-    CircleDot, CloudRain,
-    CornerUpLeft, Download, FileImage, Image as ImageIcon, Layout,
-    Palette, SlidersHorizontal, Square, TextCursor, Type
+    CircleDot, CloudRain, CornerUpLeft, Download, 
+    FileImage, Grid, Image as ImageIcon, Layout,
+    Palette, SlidersHorizontal, Square, TextCursor, Type,
+    Text, LayoutGrid, Dot, LineChart, PanelTopClose, ArrowDownUp
 } from "lucide-react";
 import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from "react";
 import { backgrounds, MAX_IMAGE_DIMENSION } from "../config/constants";
-import { ImageItem } from "../types/image";
+import { BackgroundPattern, CanvasTitle, ImageItem } from "../types/image";
 import { roundedRect } from "../utils/imageProcessing";
-import { Input } from "@/components/ui/input";
 
 interface ImageCanvasProps {
     images: ImageItem[];
@@ -48,13 +51,144 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
     const [shadowIntensity, setShadowIntensity] = useState(24);
     const [exportQuality, setExportQuality] = useState(0.8);
     const [letters, setLetters] = useState<string[]>([]);
+    
+    // New state for the added features
+    const [title, setTitle] = useState<string>("");
+    const [titleFontSize, setTitleFontSize] = useState<number>(48);
+    const [titleColor, setTitleColor] = useState<string>(theme === 'dark' ? "#ffffff" : "#18181b");
+    const [titleGradientColor, setTitleGradientColor] = useState<string>(theme === 'dark' ? "#cccccc" : "#666666");
+    const [useTitleGradient, setUseTitleGradient] = useState<boolean>(false);
+    const [titleTopSpacing, setTitleTopSpacing] = useState<number>(30);
+    const [titleBottomSpacing, setTitleBottomSpacing] = useState<number>(20);
+    
+    // Background pattern options
+    const [showBackgroundPattern, setShowBackgroundPattern] = useState<boolean>(false);
+    const [patternType, setPatternType] = useState<"grid" | "dots" | "lines" | "none">("grid");
+    const [patternColor, setPatternColor] = useState<string>('rgba(51, 51, 51, 0.5)');
+    const [patternSpacing, setPatternSpacing] = useState<number>(20);
+    const [patternSize, setPatternSize] = useState<number>(1);
 
     // Initialize letters when images change
     useEffect(() => {
         setLetters(images.map((_, index) => String.fromCharCode(65 + index)));
     }, [images.length]); // Only run when number of images changes
 
-    // 添加一个通用的渲染函数
+    // Calculate dynamic title font size based on canvas width
+    const calculateDynamicTitleSize = (canvasWidth: number, baseSize: number): number => {
+        return Math.min(Math.max(baseSize, canvasWidth * 0.03), baseSize * 2);
+    };
+    
+    // Calculate dynamic pattern settings - fixed to use actual values
+    const calculateDynamicPatternSettings = (
+        canvasWidth: number, 
+        canvasHeight: number,
+        baseSpacing: number,
+        baseSize: number
+    ) => {
+        // Use the base values directly but scale up for very large canvases
+        const maxDimension = Math.max(canvasWidth, canvasHeight);
+        const scaleFactor = maxDimension > 2000 ? maxDimension / 2000 : 1;
+        
+        return {
+            spacing: baseSpacing * scaleFactor,
+            size: baseSize * scaleFactor
+        };
+    };
+
+    // Draw background patterns
+    const drawPatterns = (
+        ctx: CanvasRenderingContext2D,
+        canvasWidth: number,
+        canvasHeight: number,
+        scale: number = 1
+    ) => {
+        if (!showBackgroundPattern || patternType === 'none') return;
+
+        const { spacing: dynamicSpacing, size: dynamicSize } = calculateDynamicPatternSettings(
+            canvasWidth, 
+            canvasHeight, 
+            patternSpacing * scale,
+            patternSize * scale
+        );
+
+        ctx.save();
+        ctx.strokeStyle = patternColor;
+        ctx.fillStyle = patternColor;
+        ctx.lineWidth = dynamicSize;
+
+        if (patternType === 'grid') {
+            // Draw vertical lines
+            for (let x = dynamicSpacing; x < canvasWidth; x += dynamicSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvasHeight);
+                ctx.stroke();
+            }
+
+            // Draw horizontal lines
+            for (let y = dynamicSpacing; y < canvasHeight; y += dynamicSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvasWidth, y);
+                ctx.stroke();
+            }
+        } else if (patternType === 'dots') {
+            for (let x = dynamicSpacing; x < canvasWidth; x += dynamicSpacing) {
+                for (let y = dynamicSpacing; y < canvasHeight; y += dynamicSpacing) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, dynamicSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        } else if (patternType === 'lines') {
+            for (let y = dynamicSpacing; y < canvasHeight; y += dynamicSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvasWidth, y);
+                ctx.stroke();
+            }
+        }
+
+        ctx.restore();
+    };
+
+    // Draw title
+    const drawTitle = (
+        ctx: CanvasRenderingContext2D,
+        canvasWidth: number,
+        actualPadding: { top: number },
+        scale: number = 1
+    ) => {
+        if (!title) return;
+
+        const dynamicFontSize = calculateDynamicTitleSize(canvasWidth, titleFontSize * scale);
+        const scaledTopSpacing = titleTopSpacing * scale;
+        
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.font = `bold ${dynamicFontSize}px Inter`;
+
+        if (useTitleGradient) {
+            const gradient = ctx.createLinearGradient(
+                canvasWidth / 2 - 200 * scale,
+                0,
+                canvasWidth / 2 + 200 * scale,
+                0
+            );
+            gradient.addColorStop(0, titleColor);
+            gradient.addColorStop(1, titleGradientColor);
+            ctx.fillStyle = gradient;
+        } else {
+            ctx.fillStyle = titleColor;
+        }
+
+        // Position the title properly - relative to top padding not the title space
+        const titleY = actualPadding.top + scaledTopSpacing;
+        ctx.fillText(title, canvasWidth / 2, titleY);
+        ctx.restore();
+    };
+
+    // Render canvas
     const renderCanvas = (
         ctx: CanvasRenderingContext2D,
         canvasWidth: number,
@@ -86,12 +220,27 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
         }
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-        // Border (只在预览时绘制)
+        // Draw background patterns
+        drawPatterns(ctx, canvasWidth, canvasHeight, scale);
+
+        // Border (only in preview)
         if (shouldDrawBorder) {
             ctx.strokeStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
             ctx.lineWidth = 2;
             ctx.strokeRect(0, 0, canvasWidth, canvasHeight);
         }
+
+        // Draw title
+        drawTitle(ctx, canvasWidth, actualPadding, scale);
+
+        // Calculate title space
+        const titleSpace = title ? (calculateDynamicTitleSize(canvasWidth, titleFontSize * scale) + 
+                                    titleTopSpacing * scale + 
+                                    titleBottomSpacing * scale) : 0;
+                                    
+        // Adjust image Y position to account for title
+        // Make sure the image Y position is aligned properly with the title
+        const imageY = actualPadding.top + (title ? titleSpace : 0);
 
         let x = actualPadding.left;
         loadedImages.forEach((img, index) => {
@@ -112,10 +261,10 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
 
                 if (borderRadius > 0) {
                     ctx.beginPath();
-                    roundedRect(ctx, x, actualPadding.top, width, height, borderRadius * scale);
+                    roundedRect(ctx, x, imageY, width, height, borderRadius * scale);
                     ctx.fill();
                 } else {
-                    ctx.fillRect(x, actualPadding.top, width, height);
+                    ctx.fillRect(x, imageY, width, height);
                 }
                 ctx.restore();
             }
@@ -123,24 +272,26 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
             ctx.save();
             if (borderRadius > 0) {
                 ctx.beginPath();
-                roundedRect(ctx, x, actualPadding.top, width, height, borderRadius * scale);
+                roundedRect(ctx, x, imageY, width, height, borderRadius * scale);
                 ctx.clip();
             }
-            ctx.drawImage(img, x, actualPadding.top, width, height);
+            ctx.drawImage(img, x, imageY, width, height);
             ctx.restore();
 
             const letter = letters[index] || String.fromCharCode(65 + index);
 
-            const letterY = maxHeight + actualPadding.top + (letterSpacing * scale);
+            // Calculate letter position with proper spacing below the image
+            const letterFontSize = Math.min(Math.max(fontSize * scale, width * 0.15), fontSize * scale * 1.5);
+            
+            // Make sure letters are placed below the image with adequate spacing
+            // Use letterSpacing as a percentage of the image height to control spacing
+            const letterSpacingPixels = letterSpacing * scale * 0.2; // Scale down to make spacing reasonable
+            const letterY = imageY + height + letterSpacingPixels + letterFontSize * 0.8; // Position letters below image
 
-            ctx.font = `bold ${fontSize * scale}px Inter`;
+            ctx.font = `bold ${letterFontSize}px Inter`;
             ctx.fillStyle = theme === 'dark' ? "#ffffff" : "#18181b";
             ctx.textAlign = "center";
-            ctx.fillText(
-                letter,
-                x + width / 2,
-                letterY
-            );
+            ctx.fillText(letter, x + width / 2, letterY);
 
             x += width + actualPadding.right;
         });
@@ -170,7 +321,7 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
         }
     };
 
-    // 修改 downloadImage 函数
+    // Download image function
     const downloadImage = async () => {
         const canvas = canvasRef.current;
         if (!canvas || images.length === 0) return;
@@ -202,8 +353,24 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
             return sum + (maxOriginalHeight * aspectRatio);
         }, 0) + actualPadding.left + actualPadding.right + (images.length - 1) * actualPadding.right;
 
+        // Calculate title space for high-res export
+        const titleSpace = title ? (calculateDynamicTitleSize(totalWidth, titleFontSize) + 
+                                  titleTopSpacing + titleBottomSpacing) : 0;
+
+        // Make canvas height account for letters below images
+        // Add extra space for letter height based on font size and letter spacing
+        const letterHeight = Math.max(fontSize, maxOriginalHeight * 0.1) * 1.2;
+        const letterSpace = letterSpacing * 0.5;
+        const totalLetterSpace = letterHeight + letterSpace;
+
         exportCanvas.width = Math.round(totalWidth);
-        exportCanvas.height = Math.round(maxOriginalHeight + actualPadding.top + actualPadding.bottom);
+        exportCanvas.height = Math.round(
+            maxOriginalHeight + 
+            actualPadding.top + 
+            actualPadding.bottom + 
+            (title ? titleSpace : 0) + 
+            totalLetterSpace
+        );
 
         const scale = exportCanvas.width / canvas.width;
 
@@ -215,7 +382,7 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
             maxOriginalHeight,
             actualPadding,
             scale,
-            false // 导出时不显示边框
+            false // Don't show border on export
         );
 
         const link = document.createElement("a");
@@ -229,7 +396,7 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
         link.click();
     };
 
-    // 修改 useEffect 中的 updateCanvas 函数
+    // Update canvas function
     useEffect(() => {
         const updateCanvas = async () => {
             const canvas = canvasRef.current;
@@ -259,8 +426,18 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                 return sum + (maxHeight * aspectRatio);
             }, 0) + actualPadding.left + actualPadding.right + (images.length - 1) * actualPadding.right;
 
+            // Calculate title space for preview
+            const titleSpace = title ? (calculateDynamicTitleSize(totalWidth, titleFontSize) + 
+                                      titleTopSpacing + titleBottomSpacing) : 0;
+
+            // Add space for letters below images
+            const letterHeight = Math.max(fontSize, maxHeight * 0.1) * 1.2;
+            const letterSpace = letterSpacing * 0.5;
+            const totalLetterSpace = letterHeight + letterSpace;
+
             canvas.width = totalWidth;
-            canvas.height = maxHeight + actualPadding.top + actualPadding.bottom;
+            canvas.height = maxHeight + actualPadding.top + actualPadding.bottom + 
+                           (title ? titleSpace : 0) + totalLetterSpace;
 
             renderCanvas(
                 ctx,
@@ -270,20 +447,25 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                 maxHeight,
                 actualPadding,
                 1,
-                true // 预览时显示边框
+                true // Show border in preview
             );
         };
 
         updateCanvas();
-    }, [images, background, showShadow, borderRadius, theme, padding, fontSize,
-        showWatermark, watermarkSize, letterSpacing, shadowIntensity, letters]);
-    const [testValue, setTestValue] = useState("sdadsa");
+    }, [
+        images, background, showShadow, borderRadius, theme, padding, fontSize,
+        showWatermark, watermarkSize, letterSpacing, shadowIntensity, letters,
+        title, titleFontSize, titleColor, titleGradientColor, useTitleGradient,
+        showBackgroundPattern, patternType, patternColor, patternSpacing, patternSize,
+        titleTopSpacing, titleBottomSpacing
+    ]);
+
     return (
         <div className="space-y-8">
             <div className="flex gap-8">
                 <Card className="w-80 p-4">
                     <Tabs defaultValue="layout" className="w-full">
-                        <TabsList className="grid w-full grid-cols-4">
+                        <TabsList className="grid w-full grid-cols-5">
                             <TabsTrigger value="layout">
                                 <Layout className="h-4 w-4" />
                             </TabsTrigger>
@@ -293,15 +475,15 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                             <TabsTrigger value="text">
                                 <Type className="h-4 w-4" />
                             </TabsTrigger>
-                            <TabsTrigger value="watermark">
-                                <ImageIcon className="h-4 w-4" />
+                            <TabsTrigger value="title">
+                                <Text className="h-4 w-4" />
                             </TabsTrigger>
-                            {/* <TabsTrigger value="export">
-                                <Download className="h-4 w-4" />
-                            </TabsTrigger> */}
+                            <TabsTrigger value="pattern">
+                                <LayoutGrid className="h-4 w-4" />
+                            </TabsTrigger>
                         </TabsList>
 
-                        {/* 布局设置 */}
+                        {/* Layout settings */}
                         <TabsContent value="layout" className="mt-4">
                             <div className="space-y-4">
                                 <div className="space-y-2">
@@ -342,7 +524,7 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                             </div>
                         </TabsContent>
 
-                        {/* 样式设置 */}
+                        {/* Style settings */}
                         <TabsContent value="style" className="mt-4">
                             <div className="space-y-4">
                                 <div className="space-y-2">
@@ -378,6 +560,7 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <CloudRain className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm text-muted-foreground">Show Shadow</span>
                                         <Switch
                                             checked={showShadow}
                                             onCheckedChange={setShowShadow}
@@ -418,7 +601,7 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                             </div>
                         </TabsContent>
 
-                        {/* 文字设置 */}
+                        {/* Text settings */}
                         <TabsContent value="text" className="mt-4">
                             <div className="space-y-4">
                                 <div className="space-y-2">
@@ -432,7 +615,7 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                                             setFontSize(value);
                                         }}
                                         min={12}
-                                        max={72}
+                                        max={160}
                                         step={1}
                                         className="w-full"
                                     />
@@ -448,11 +631,14 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                                         onValueChange={([value]) => {
                                             setLetterSpacing(value);
                                         }}
-                                        min={100}
+                                        min={30}
                                         max={300}
                                         step={1}
                                         className="w-full"
                                     />
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                        Controls space between image and letter
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-4 gap-2">
@@ -476,11 +662,185 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                             </div>
                         </TabsContent>
 
-                        {/* 水印设置 */}
+                        {/* Title settings */}
+                        <TabsContent value="title" className="mt-4">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Text className="h-4 w-4" />
+                                        <span>Title Text</span>
+                                    </div>
+                                    <Input
+                                        type="text"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        placeholder="Enter title..."
+                                        className="w-full"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <TextCursor className="h-4 w-4" />
+                                        <span>Base Font Size</span>
+                                    </div>
+                                    <Slider
+                                        value={[titleFontSize]}
+                                        onValueChange={([value]) => setTitleFontSize(value)}
+                                        min={16}
+                                        max={160}
+                                        step={1}
+                                        className="w-full"
+                                    />
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                        Font will scale automatically for larger images
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <ArrowDownUp className="h-4 w-4" />
+                                        <span>Title Spacing</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label className="text-xs mb-1 block">Top</Label>
+                                            <Slider
+                                                value={[titleTopSpacing]}
+                                                onValueChange={([value]) => setTitleTopSpacing(value)}
+                                                min={10}
+                                                max={100}
+                                                step={1}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                            <Slider
+                                                value={[titleBottomSpacing]}
+                                                onValueChange={([value]) => setTitleBottomSpacing(value)}
+                                                min={10}
+                                                max={100}
+                                                step={1}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Palette className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm text-muted-foreground">Use Gradient</span>
+                                        <Switch
+                                            checked={useTitleGradient}
+                                            onCheckedChange={setUseTitleGradient}
+                                            className="data-[state=checked]:bg-primary"
+                                        />
+                                    </div>
+
+                                    <ColorPicker
+                                        label="Title Color"
+                                        value={titleColor}
+                                        onChange={setTitleColor}
+                                    />
+
+                                    {useTitleGradient && (
+                                        <ColorPicker
+                                            label="Gradient Color"
+                                            value={titleGradientColor}
+                                            onChange={setTitleGradientColor}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        {/* Pattern settings */}
+                        <TabsContent value="pattern" className="mt-4">
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm text-muted-foreground">Show Pattern</span>
+                                    <Switch
+                                        checked={showBackgroundPattern}
+                                        onCheckedChange={setShowBackgroundPattern}
+                                        className="data-[state=checked]:bg-primary"
+                                    />
+                                </div>
+
+                                {showBackgroundPattern && (
+                                    <>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <span>Pattern Type</span>
+                                            </div>
+                                            <Select 
+                                                value={patternType} 
+                                                onValueChange={(value: "grid" | "dots" | "lines" | "none") => setPatternType(value)}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="grid">Grid</SelectItem>
+                                                    <SelectItem value="dots">Dots</SelectItem>
+                                                    <SelectItem value="lines">Lines</SelectItem>
+                                                    <SelectItem value="none">None</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <div className="text-xs text-muted-foreground mt-1">
+                                                Pattern will scale automatically for larger images
+                                            </div>
+                                        </div>
+
+                                        <ColorPicker
+                                            label="Pattern Color"
+                                            value={patternColor}
+                                            onChange={setPatternColor}
+                                            showAlpha={true}
+                                        />
+
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <SlidersHorizontal className="h-4 w-4" />
+                                                <span>Base Spacing</span>
+                                            </div>
+                                            <Slider
+                                                value={[patternSpacing]}
+                                                onValueChange={([value]) => setPatternSpacing(value)}
+                                                min={10}
+                                                max={80}
+                                                step={1}
+                                                className="w-full"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <SlidersHorizontal className="h-4 w-4" />
+                                                <span>Base Size</span>
+                                            </div>
+                                            <Slider
+                                                value={[patternSize]}
+                                                onValueChange={([value]) => setPatternSize(value)}
+                                                min={0.5}
+                                                max={5}
+                                                step={0.1}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </TabsContent>
+
+                        {/* Watermark settings */}
                         <TabsContent value="watermark" className="mt-4">
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2">
                                     <FileImage className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm text-muted-foreground">Show Watermark</span>
                                     <Switch
                                         checked={showWatermark}
                                         onCheckedChange={setShowWatermark}
@@ -546,4 +906,4 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
             </div>
         </div>
     );
-} 
+}
