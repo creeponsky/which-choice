@@ -1,16 +1,15 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { CircleDot, CloudRain, CornerRightDown, Layers, Paintbrush, Palette, Square, SquareStack } from "lucide-react";
-import { backgrounds } from "@/app/config/constants";
-import { CanvasSettings } from "../types";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Palette, SquareStack, Paintbrush, CornerRightDown, Layers } from "lucide-react";
+import { backgrounds } from "@/app/config/constants";
+import { CanvasSettings } from "../types";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { ColorPicker } from "@/components/ui/color-picker";
 
-interface StyleSettingsProps {
+interface BackgroundSettingsProps {
     settings: CanvasSettings;
     updateSettings: <K extends keyof CanvasSettings>(key: K, value: CanvasSettings[K]) => void;
     updateCustomBackground: (
@@ -19,11 +18,15 @@ interface StyleSettingsProps {
     ) => void;
 }
 
-export function StyleSettings({ settings, updateSettings, updateCustomBackground }: StyleSettingsProps) {
+export function BackgroundSettings({ 
+    settings, 
+    updateSettings,
+    updateCustomBackground
+}: BackgroundSettingsProps) {
     const { theme } = useTheme();
     const [color1, setColor1] = useState(settings.customBackground?.color1 || "#ffffff");
     const [color2, setColor2] = useState(settings.customBackground?.color2 || "#f3f4f6");
-
+    
     // Sync color picker values with settings
     useEffect(() => {
         setColor1(settings.customBackground?.color1 || "#ffffff");
@@ -31,14 +34,14 @@ export function StyleSettings({ settings, updateSettings, updateCustomBackground
     }, [settings.customBackground?.color1, settings.customBackground?.color2]);
 
     // Handle color changes
-    const handleColor1Change = (value: string) => {
-        setColor1(value);
-        updateCustomBackground('color1', value);
+    const handleColor1Change = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setColor1(e.target.value);
+        updateCustomBackground('color1', e.target.value);
     };
-
-    const handleColor2Change = (value: string) => {
-        setColor2(value);
-        updateCustomBackground('color2', value);
+    
+    const handleColor2Change = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setColor2(e.target.value);
+        updateCustomBackground('color2', e.target.value);
     };
 
     return (
@@ -55,10 +58,7 @@ export function StyleSettings({ settings, updateSettings, updateCustomBackground
                     onValueChange={(value) => updateSettings('useCustomBackground', value === "custom")}
                     className="flex space-x-1"
                 >
-                    <div 
-                        className="flex items-center space-x-2 rounded-md border p-2 flex-1 cursor-pointer"
-                        onClick={() => updateSettings('useCustomBackground', false)}
-                    >
+                    <div className="flex items-center space-x-2 rounded-md border p-2 flex-1 cursor-pointer">
                         <RadioGroupItem value="preset" id="preset" />
                         <Label htmlFor="preset" className="cursor-pointer flex items-center gap-1">
                             <SquareStack className="h-3.5 w-3.5" />
@@ -66,10 +66,7 @@ export function StyleSettings({ settings, updateSettings, updateCustomBackground
                         </Label>
                     </div>
                     
-                    <div 
-                        className="flex items-center space-x-2 rounded-md border p-2 flex-1 cursor-pointer"
-                        onClick={() => updateSettings('useCustomBackground', true)}
-                    >
+                    <div className="flex items-center space-x-2 rounded-md border p-2 flex-1 cursor-pointer">
                         <RadioGroupItem value="custom" id="custom" />
                         <Label htmlFor="custom" className="cursor-pointer flex items-center gap-1">
                             <Palette className="h-3.5 w-3.5" />
@@ -149,27 +146,48 @@ export function StyleSettings({ settings, updateSettings, updateCustomBackground
                     
                     {/* Solid Color */}
                     {settings.customBackground?.type === "solid" && (
-                        <ColorPicker
-                            label="Background Color"
-                            value={color1}
-                            onChange={handleColor1Change}
-                        />
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Palette className="h-4 w-4" />
+                                <span>Background Color</span>
+                            </div>
+                            <input
+                                type="color"
+                                value={color1}
+                                onChange={handleColor1Change}
+                                className="w-full h-8 cursor-pointer rounded-md"
+                            />
+                        </div>
                     )}
                     
                     {/* Gradient */}
                     {settings.customBackground?.type === "gradient" && (
                         <>
-                            <ColorPicker
-                                label="Start Color"
-                                value={color1}
-                                onChange={handleColor1Change}
-                            />
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Palette className="h-4 w-4" />
+                                    <span>Start Color</span>
+                                </div>
+                                <input
+                                    type="color"
+                                    value={color1}
+                                    onChange={handleColor1Change}
+                                    className="w-full h-8 cursor-pointer rounded-md"
+                                />
+                            </div>
                             
-                            <ColorPicker
-                                label="End Color"
-                                value={color2}
-                                onChange={handleColor2Change}
-                            />
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Palette className="h-4 w-4" />
+                                    <span>End Color</span>
+                                </div>
+                                <input
+                                    type="color"
+                                    value={color2}
+                                    onChange={handleColor2Change}
+                                    className="w-full h-8 cursor-pointer rounded-md"
+                                />
+                            </div>
                             
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -192,50 +210,6 @@ export function StyleSettings({ settings, updateSettings, updateCustomBackground
                     )}
                 </div>
             )}
-
-            {/* 阴影设置 */}
-            <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                    <CloudRain className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Show Shadow</span>
-                    <Switch
-                        checked={settings.showShadow}
-                        onCheckedChange={(value) => updateSettings('showShadow', value)}
-                        className="data-[state=checked]:bg-primary"
-                    />
-                </div>
-
-                {settings.showShadow && (
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>Shadow Intensity</span>
-                        </div>
-                        <Slider
-                            value={[settings.shadowIntensity]}
-                            onValueChange={([value]) => updateSettings('shadowIntensity', value)}
-                            min={10}
-                            max={50}
-                            step={1}
-                            className="w-full"
-                        />
-                    </div>
-                )}
-            </div>
-
-            {/* 圆角设置 */}
-            <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CircleDot className="h-4 w-4" />
-                    <span>Border Radius</span>
-                </div>
-                <Slider
-                    value={[settings.borderRadius]}
-                    onValueChange={([value]) => updateSettings('borderRadius', value)}
-                    max={50}
-                    step={1}
-                    className="w-full"
-                />
-            </div>
         </div>
     );
-} 
+}

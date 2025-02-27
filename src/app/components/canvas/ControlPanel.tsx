@@ -1,17 +1,23 @@
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-    CircleDot, CloudRain, CornerUpLeft, 
-    Layout, Palette, SlidersHorizontal, Square, TextCursor, Type,
-    Text, LayoutGrid, Dot, ArrowDownUp
+import {
+    Image,
+    Layout,
+    LayoutGrid,
+    Palette,
+    SquareCode,
+    Text,
+    Type
 } from "lucide-react";
 import { useTheme } from 'next-themes';
 import { useEffect } from "react";
+import { BorderSettings } from "./panels/BorderSettings";
 import { LayoutSettings } from "./panels/LayoutSettings";
+import { PatternSettings } from "./panels/PatternSettings";
 import { StyleSettings } from "./panels/StyleSettings";
 import { TextSettings } from "./panels/TextSettings";
 import { TitleSettings } from "./panels/TitleSettings";
-import { PatternSettings } from "./panels/PatternSettings";
+import { WatermarkSettings } from "./panels/WatermarkSettings";
 import { CanvasSettings } from "./types";
 
 interface ControlPanelProps {
@@ -31,7 +37,7 @@ export function ControlPanel({
 }: ControlPanelProps) {
     const { theme } = useTheme();
     
-    // Ensure title colors are in sync with theme
+    // Ensure colors are in sync with theme
     useEffect(() => {
         setSettings(prev => ({
             ...prev,
@@ -39,6 +45,10 @@ export function ControlPanel({
                 ...prev.title,
                 color: theme === 'dark' ? "#ffffff" : "#18181b",
                 gradientColor: theme === 'dark' ? "#cccccc" : "#666666"
+            },
+            border: {
+                ...prev.border,
+                color: theme === 'dark' ? "#ffffff" : "#18181b"
             }
         }));
     }, [theme, setSettings]);
@@ -71,17 +81,34 @@ export function ControlPanel({
             }
         }));
     };
+    
+    // Update custom background settings
+    const updateCustomBackground = <K extends keyof NonNullable<CanvasSettings['customBackground']>>(
+        key: K,
+        value: NonNullable<CanvasSettings['customBackground']>[K]
+    ) => {
+        setSettings(prev => ({
+            ...prev,
+            customBackground: {
+                ...(prev.customBackground || { type: 'solid', color1: '#ffffff', color2: '#cccccc', gradientAngle: 45 }),
+                [key]: value
+            }
+        }));
+    };
 
     return (
         <Card className="w-80 p-4">
             <Tabs defaultValue="layout" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-7">
                     <TabsTrigger value="layout">
                         <Layout className="h-4 w-4" />
                     </TabsTrigger>
                     <TabsTrigger value="style">
                         <Palette className="h-4 w-4" />
                     </TabsTrigger>
+                    {/* <TabsTrigger value="background">
+                        <SquareDot className="h-4 w-4" />
+                    </TabsTrigger> */}
                     <TabsTrigger value="text">
                         <Type className="h-4 w-4" />
                     </TabsTrigger>
@@ -91,6 +118,12 @@ export function ControlPanel({
                     <TabsTrigger value="pattern">
                         <LayoutGrid className="h-4 w-4" />
                     </TabsTrigger>
+                    <TabsTrigger value="border">
+                        <SquareCode className="h-4 w-4" />
+                    </TabsTrigger>
+                    <TabsTrigger value="watermark">
+                        <Image className="h-4 w-4" />
+                    </TabsTrigger>
                 </TabsList>
 
                 {/* 布局设置 */}
@@ -98,6 +131,7 @@ export function ControlPanel({
                     <LayoutSettings 
                         padding={settings.padding}
                         setPadding={(padding) => updateSettings('padding', padding)}
+                        hasTitle={Boolean(settings.title.text)}
                     />
                 </TabsContent>
 
@@ -106,9 +140,17 @@ export function ControlPanel({
                     <StyleSettings 
                         settings={settings}
                         updateSettings={updateSettings}
-                        theme={theme}
+                        updateCustomBackground={updateCustomBackground}
                     />
                 </TabsContent>
+                
+                {/* 背景设置 */}
+                {/* <TabsContent value="background" className="mt-4">
+                    <BackgroundSettings 
+                        settings={settings}
+                        updateSettings={updateSettings}
+                    />
+                </TabsContent> */}
 
                 {/* 文本设置 */}
                 <TabsContent value="text" className="mt-4">
@@ -136,6 +178,28 @@ export function ControlPanel({
                     <PatternSettings 
                         patternSettings={settings.pattern}
                         updatePatternSettings={(key, value) => updateNestedSettings('pattern', key, value)}
+                    />
+                </TabsContent>
+
+                {/* 边框设置 */}
+                <TabsContent value="border" className="mt-4">
+                    <BorderSettings 
+                        borderSettings={settings.border}
+                        updateBorderSettings={(key, value) => updateNestedSettings('border', key, value)}
+                    />
+                </TabsContent>
+
+                {/* 水印设置 */}
+                <TabsContent value="watermark" className="mt-4">
+                    <WatermarkSettings 
+                        showWatermark={settings.showWatermark}
+                        setShowWatermark={(value) => updateSettings('showWatermark', value)}
+                        watermarkSize={settings.watermarkSize}
+                        setWatermarkSize={(value) => updateSettings('watermarkSize', value)}
+                        watermarkOpacity={settings.watermarkOpacity || 1}
+                        setWatermarkOpacity={(value) => updateSettings('watermarkOpacity', value)}
+                        exportQuality={settings.exportQuality}
+                        setExportQuality={(value) => updateSettings('exportQuality', value)}
                     />
                 </TabsContent>
             </Tabs>

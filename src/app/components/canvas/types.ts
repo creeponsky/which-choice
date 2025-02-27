@@ -4,6 +4,13 @@ import { backgrounds } from "@/app/config/constants";
 // Canvas Settings 类型定义
 export interface CanvasSettings {
     background: string;
+    customBackground?: {
+        type: "solid" | "gradient";
+        color1: string;
+        color2?: string;
+        gradientAngle?: number;
+    };
+    useCustomBackground: boolean;
     showShadow: boolean;
     borderRadius: number;
     padding: {
@@ -14,6 +21,7 @@ export interface CanvasSettings {
     };
     showWatermark: boolean;
     watermarkSize: number;
+    watermarkOpacity: number;
     shadowIntensity: number;
     exportQuality: number;
     
@@ -50,11 +58,27 @@ export interface CanvasSettings {
             baseSize: number
         ) => { spacing: number; size: number };
     };
+    
+    // Border settings
+    border: {
+        show: boolean;
+        width: number;
+        color: string;
+        padding: number;
+        borderRadius: number;
+    };
 }
 
 // 默认设置
 export const defaultCanvasSettings: CanvasSettings = {
     background: backgrounds[backgrounds.length - 1].value,
+    customBackground: {
+        type: "solid",
+        color1: "#ffffff",
+        color2: "#f3f4f6",
+        gradientAngle: 135
+    },
+    useCustomBackground: false,
     showShadow: true,
     borderRadius: 36,
     padding: {
@@ -65,6 +89,7 @@ export const defaultCanvasSettings: CanvasSettings = {
     },
     showWatermark: true,
     watermarkSize: 24,
+    watermarkOpacity: 1,
     shadowIntensity: 24,
     exportQuality: 0.8,
     
@@ -106,5 +131,13 @@ export const defaultCanvasSettings: CanvasSettings = {
                 size: baseSize * scaleFactor
             };
         }
+    },
+    
+    border: {
+        show: false,
+        width: 2,
+        color: "#ffffff",
+        padding: 20,
+        borderRadius: 36
     }
 }; 

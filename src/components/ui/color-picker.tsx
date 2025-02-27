@@ -79,7 +79,7 @@ export function ColorPicker({
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      {label && <Label className="text-sm font-medium">{label}</Label>}
+      {label && <Label className="text-sm font-medium text-muted-foreground">{label}</Label>}
       <div className="flex items-center gap-2">
         <Popover>
           <PopoverTrigger asChild>

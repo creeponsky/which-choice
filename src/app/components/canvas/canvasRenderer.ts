@@ -27,21 +27,31 @@ export const drawPatterns = (
     
     if (!pattern.show || pattern.type === 'none') return;
 
+    // 对于导出时的高分辨率，我们需要保持视觉一致性
+    // 通过使用适应性的spacing和size计算方式
+    const baseSpacing = pattern.spacing;
+    const baseSize = pattern.size;
+    
+    // 使用相对画布尺寸计算模式密度，而不是简单地乘以scale
     const { spacing: dynamicSpacing, size: dynamicSize } = pattern.calculateDynamicPatternSettings(
-        canvasWidth, 
-        canvasHeight, 
-        pattern.spacing * scale,
-        pattern.size * scale
+        canvasWidth / scale, 
+        canvasHeight / scale, 
+        baseSpacing,
+        baseSize
     );
+    
+    // 然后将计算出的值应用缩放系数
+    const finalSpacing = dynamicSpacing * scale;
+    const finalSize = dynamicSize * scale;
 
     ctx.save();
     ctx.strokeStyle = pattern.color;
     ctx.fillStyle = pattern.color;
-    ctx.lineWidth = dynamicSize;
+    ctx.lineWidth = finalSize;
 
     if (pattern.type === 'grid') {
         // Draw vertical lines
-        for (let x = dynamicSpacing; x < canvasWidth; x += dynamicSpacing) {
+        for (let x = finalSpacing; x < canvasWidth; x += finalSpacing) {
             ctx.beginPath();
             ctx.moveTo(x, 0);
             ctx.lineTo(x, canvasHeight);
@@ -49,22 +59,22 @@ export const drawPatterns = (
         }
 
         // Draw horizontal lines
-        for (let y = dynamicSpacing; y < canvasHeight; y += dynamicSpacing) {
+        for (let y = finalSpacing; y < canvasHeight; y += finalSpacing) {
             ctx.beginPath();
             ctx.moveTo(0, y);
             ctx.lineTo(canvasWidth, y);
             ctx.stroke();
         }
     } else if (pattern.type === 'dots') {
-        for (let x = dynamicSpacing; x < canvasWidth; x += dynamicSpacing) {
-            for (let y = dynamicSpacing; y < canvasHeight; y += dynamicSpacing) {
+        for (let x = finalSpacing; x < canvasWidth; x += finalSpacing) {
+            for (let y = finalSpacing; y < canvasHeight; y += finalSpacing) {
                 ctx.beginPath();
-                ctx.arc(x, y, dynamicSize, 0, Math.PI * 2);
+                ctx.arc(x, y, finalSize, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
     } else if (pattern.type === 'lines') {
-        for (let y = dynamicSpacing; y < canvasHeight; y += dynamicSpacing) {
+        for (let y = finalSpacing; y < canvasHeight; y += finalSpacing) {
             ctx.beginPath();
             ctx.moveTo(0, y);
             ctx.lineTo(canvasWidth, y);
@@ -128,30 +138,81 @@ export const renderCanvas = (
     shouldDrawBorder: boolean = true
 ) => {
     // Background handling
-    const bg = backgrounds.find(bg => bg.value === settings.background);
-    if (bg?.value.includes('gradient')) {
-        const gradient = ctx.createLinearGradient(0, 0, canvasWidth, canvasHeight);
-        const colors = theme === 'dark' ? bg.dark : bg.light;
-        const colorMatches = colors.match(/#[a-f0-9]{6}/gi) || ['#ffffff'];
-
-        if (colorMatches.length === 2) {
-            gradient.addColorStop(0, colorMatches[0]);
-            gradient.addColorStop(1, colorMatches[1]);
-        } else if (colorMatches.length > 2) {
-            colorMatches.forEach((color, index) => {
-                gradient.addColorStop(index / (colorMatches.length - 1), color);
-            });
+    if (settings.useCustomBackground && settings.customBackground) {
+        // Use custom background
+        const { type, color1, color2, gradientAngle = 135 } = settings.customBackground;
+        
+        if (type === 'gradient' && color2) {
+            // Calculate gradient coordinates based on angle
+            const angleRad = (gradientAngle * Math.PI) / 180;
+            const x1 = 0.5 - 0.5 * Math.cos(angleRad);
+            const y1 = 0.5 - 0.5 * Math.sin(angleRad);
+            const x2 = 0.5 + 0.5 * Math.cos(angleRad);
+            const y2 = 0.5 + 0.5 * Math.sin(angleRad);
+            
+            const gradient = ctx.createLinearGradient(
+                x1 * canvasWidth, 
+                y1 * canvasHeight, 
+                x2 * canvasWidth, 
+                y2 * canvasHeight
+            );
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            ctx.fillStyle = gradient;
+        } else {
+            // Solid color
+            ctx.fillStyle = color1;
         }
-        ctx.fillStyle = gradient;
     } else {
-        ctx.fillStyle = theme === 'dark' ? bg?.dark || '#1e1e1e' : bg?.light || '#ffffff';
+        // Use preset backgrounds
+        const bg = backgrounds.find(bg => bg.value === settings.background);
+        if (bg?.value.includes('gradient')) {
+            const gradient = ctx.createLinearGradient(0, 0, canvasWidth, canvasHeight);
+            const colors = theme === 'dark' ? bg.dark : bg.light;
+            const colorMatches = colors.match(/#[a-f0-9]{6}/gi) || ['#ffffff'];
+
+            if (colorMatches.length === 2) {
+                gradient.addColorStop(0, colorMatches[0]);
+                gradient.addColorStop(1, colorMatches[1]);
+            } else if (colorMatches.length > 2) {
+                colorMatches.forEach((color, index) => {
+                    gradient.addColorStop(index / (colorMatches.length - 1), color);
+                });
+            }
+            ctx.fillStyle = gradient;
+        } else {
+            ctx.fillStyle = theme === 'dark' ? bg?.dark || '#1e1e1e' : bg?.light || '#ffffff';
+        }
     }
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     // Draw background patterns
     drawPatterns(ctx, canvasWidth, canvasHeight, settings, scale);
 
-    // Border (only in preview)
+    // 绘制内部模拟边框 (如果启用)
+    if (settings.border.show) {
+        const borderWidth = settings.border.width * scale;
+        const borderPadding = settings.border.padding * scale;
+        const borderRadius = settings.border.borderRadius * scale;
+        
+        // 计算边框的位置（内部缩进）
+        const borderX = borderPadding;
+        const borderY = borderPadding;
+        const borderWidth2 = canvasWidth - (borderPadding * 2);
+        const borderHeight = canvasHeight - (borderPadding * 2);
+        
+        ctx.save();
+        ctx.strokeStyle = settings.border.color;
+        ctx.lineWidth = borderWidth;
+        
+        // 绘制内部边框
+        ctx.beginPath();
+        roundedRect(ctx, borderX, borderY, borderWidth2, borderHeight, borderRadius);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Preview border (only in preview)
     if (shouldDrawBorder) {
         ctx.strokeStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
         ctx.lineWidth = 2;
@@ -177,6 +238,7 @@ export const renderCanvas = (
         const height = maxHeight;
         const width = height * aspectRatio;
 
+        // Add shadow if enabled
         if (settings.showShadow) {
             ctx.save();
             ctx.shadowColor = theme === 'dark'
@@ -198,6 +260,7 @@ export const renderCanvas = (
             ctx.restore();
         }
 
+        // Draw the actual image with clipping for rounded corners
         ctx.save();
         if (settings.borderRadius > 0) {
             ctx.beginPath();
@@ -209,13 +272,18 @@ export const renderCanvas = (
 
         const letter = settings.text.letters?.[index] || String.fromCharCode(65 + index);
 
-        // Calculate letter position with proper spacing below the image
-        const letterFontSize = Math.min(
-            Math.max(settings.text.fontSize * scale, width * 0.15), 
-            settings.text.fontSize * scale * 1.5
+        // 修改字母大小计算逻辑，确保视觉一致性
+        // 先基于缩小后的画布(scale=1)计算基础字体大小
+        const baseWidth = width / scale;
+        const baseFontSize = Math.min(
+            Math.max(settings.text.fontSize, baseWidth * 0.15), 
+            settings.text.fontSize * 1.5
         );
         
-        // Calculate vertical gap between image and letter based on letterSpacing setting
+        // 然后应用缩放
+        const letterFontSize = baseFontSize * scale;
+        
+        // 计算垂直间距
         const verticalGap = (settings.text.letterSpacing / 300) * height * 0.5;
         const letterY = imageY + height + verticalGap + letterFontSize * 0.8;
 
@@ -226,17 +294,17 @@ export const renderCanvas = (
 
         x += width + actualPadding.right;
     });
-
     if (settings.showWatermark) {
         const baseSize = Math.min(canvasWidth, canvasHeight);
         const dynamicSize = Math.max(16, Math.round(baseSize * (settings.watermarkSize / 1000)));
+        const opacity = settings.watermarkOpacity;
 
         ctx.font = `bold ${dynamicSize}px system-ui, -apple-system, Inter`;
-        ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+        ctx.fillStyle = theme === 'dark' ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`;
         ctx.textAlign = 'right';
 
         // Add stroke for better visibility
-        ctx.strokeStyle = theme === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)';
+        ctx.strokeStyle = theme === 'dark' ? `rgba(0, 0, 0, ${opacity / 2})` : `rgba(255, 255, 255, ${opacity / 2})`;
         ctx.lineWidth = dynamicSize / 8;
         ctx.strokeText(
             'which-choice.com',
@@ -245,7 +313,7 @@ export const renderCanvas = (
         );
 
         ctx.fillText(
-            'which-choice.com',
+            'which-choice.com', 
             canvasWidth - dynamicSize,
             canvasHeight - dynamicSize
         );
