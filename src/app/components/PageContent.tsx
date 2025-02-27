@@ -11,6 +11,7 @@ import { AlertCircle, Moon, Plus, Sun, Trash2, Upload } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useCallback, useState } from "react";
 import { ImageCanvas } from "./ImageCanvas";
+import { SiteLogo } from "./SiteLogo";
 
 export function PageContent() {
     const { theme, setTheme } = useTheme();
@@ -94,23 +95,20 @@ export function PageContent() {
         <div className="max-w-7xl mx-auto space-y-8">
             <div className="flex justify-between items-center">
                 <div className="flex-1">
-                    <div className="flex items-baseline gap-3">
-                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tighter hover:rotate-2 transition-transform duration-300 hover:scale-105 bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-zinc-300 dark:to-zinc-500 text-transparent bg-clip-text">
-                            Which-Choice
-                        </h1>
-                        <span className="text-xl sm:text-2xl md:text-3xl w-[20px] font-serif italic bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-zinc-300 dark:to-zinc-500 text-transparent bg-clip-text">
-                            ?
-                        </span>
+                    <div className="flex justify-between items-center">
+                        <div className="flex-1">
+                            <SiteLogo variant="contrast" showDownloadButton={true} />
+                        </div>
+                        <div className="flex items-center">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                            >
+                                {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                            </Button>
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                    >
-                        {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                    </Button>
                 </div>
             </div>
 
@@ -212,9 +210,9 @@ export function PageContent() {
                                             className={`cursor-pointer h-[180px] w-[140px] flex flex-col items-center justify-center
                           border-2 border-dashed rounded-lg transition-colors
                           ${theme === 'dark'
-                                                ? "border-zinc-700 hover:border-zinc-500 text-zinc-500 hover:text-zinc-300"
-                                                : "border-zinc-300 hover:border-zinc-400 text-zinc-400 hover:text-zinc-600"
-                                            }`}
+                                                    ? "border-zinc-700 hover:border-zinc-500 text-zinc-500 hover:text-zinc-300"
+                                                    : "border-zinc-300 hover:border-zinc-400 text-zinc-400 hover:text-zinc-600"
+                                                }`}
                                         >
                                             <Plus className="h-8 w-8 mb-2" />
                                             <span className="text-sm">Add Images</span>
