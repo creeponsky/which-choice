@@ -52,7 +52,7 @@ export function TextSettings({
                     className="w-full"
                 />
                 <div className="text-xs text-muted-foreground mt-1">
-                    Controls space between image and letter
+                    Controls vertical gap between image and letter
                 </div>
             </div>
 

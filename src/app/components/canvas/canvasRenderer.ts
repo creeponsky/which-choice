@@ -215,9 +215,9 @@ export const renderCanvas = (
             settings.text.fontSize * scale * 1.5
         );
         
-        // Use letterSpacing as a percentage of the image height to control spacing
-        const letterSpacingPixels = settings.text.letterSpacing * scale * 0.2;
-        const letterY = imageY + height + letterSpacingPixels + letterFontSize * 0.8;
+        // Calculate vertical gap between image and letter based on letterSpacing setting
+        const verticalGap = (settings.text.letterSpacing / 300) * height * 0.5;
+        const letterY = imageY + height + verticalGap + letterFontSize * 0.8;
 
         ctx.font = `bold ${letterFontSize}px Inter`;
         ctx.fillStyle = theme === 'dark' ? "#ffffff" : "#18181b";

@@ -59,8 +59,8 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
 
         // Make canvas height account for letters below images
         const letterHeight = Math.max(settings.text.fontSize, maxOriginalHeight * 0.1) * 1.2;
-        const letterSpace = settings.text.letterSpacing * 0.5;
-        const totalLetterSpace = letterHeight + letterSpace;
+        const verticalGap = (settings.text.letterSpacing / 300) * maxOriginalHeight * 0.5;
+        const totalLetterSpace = letterHeight + verticalGap;
 
         exportCanvas.width = Math.round(totalWidth);
         exportCanvas.height = Math.round(
@@ -128,8 +128,8 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
 
             // Add space for letters below images
             const letterHeight = Math.max(settings.text.fontSize, maxHeight * 0.1) * 1.2;
-            const letterSpace = settings.text.letterSpacing * 0.5;
-            const totalLetterSpace = letterHeight + letterSpace;
+            const verticalGap = (settings.text.letterSpacing / 300) * maxHeight * 0.5;
+            const totalLetterSpace = letterHeight + verticalGap;
 
             canvas.width = totalWidth;
             canvas.height = maxHeight + actualPadding.top + actualPadding.bottom + 
