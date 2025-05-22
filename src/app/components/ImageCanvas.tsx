@@ -146,8 +146,17 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                 actualPadding: params.actualPadding
             });
 
+            // 计算预览时的缩放比例，以适应视窗高度
+            const maxPreviewHeight = window.innerHeight - 200; // 留出一些边距
+            const previewScale = Math.min(1, maxPreviewHeight / params.height);
+            
+            // 设置 canvas 的实际尺寸
             canvas.width = params.width;
             canvas.height = params.height;
+
+            // 设置 canvas 的显示尺寸（缩放后的尺寸）
+            canvas.style.width = `${params.width * previewScale}px`;
+            canvas.style.height = `${params.height * previewScale}px`;
 
             renderCanvas(
                 ctx,
@@ -226,10 +235,11 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                 />
 
                 <div className="flex-1">
-                    <div className="relative">
+                    <div className="relative flex items-center justify-center min-h-[200px]">
                         <canvas
                             ref={canvasRef}
-                            className="w-full h-auto rounded-lg"
+                            className="rounded-lg"
+                            style={{ maxWidth: '100%' }}
                         />
                         {images.length > 0 && (
                             <Button
