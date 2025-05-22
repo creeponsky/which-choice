@@ -233,7 +233,12 @@ export function TextSettings({
                                                     style={{
                                                         backgroundColor: letterColors[index]?.gradientColor || textGradientColor,
                                                     }}
-                                                    onClick={() => setGradientPickerOpen(gradientPickerOpen === index ? null : index)}
+                                                    onClick={() => {
+                                                        if (!letterColors[index]?.useGradient) {
+                                                            toggleLetterGradient(index, true);
+                                                        }
+                                                        setGradientPickerOpen(gradientPickerOpen === index ? null : index);
+                                                    }}
                                                 />
                                             )}
                                         </div>
