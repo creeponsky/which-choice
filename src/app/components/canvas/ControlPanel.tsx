@@ -159,6 +159,8 @@ export function ControlPanel({
                 {/* 文本设置 */}
                 <TabsContent value="text" className="mt-4">
                     <TextSettings 
+                        showText={settings.showText}
+                        setShowText={(value) => updateSettings('showText', value)}
                         fontSize={settings.text.fontSize}
                         setFontSize={(value) => updateNestedSettings('text', 'fontSize', value)}
                         letterSpacing={settings.text.letterSpacing}

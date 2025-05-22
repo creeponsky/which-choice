@@ -24,6 +24,7 @@ export interface CanvasSettings {
     watermarkOpacity: number;
     shadowIntensity: number;
     exportQuality: number;
+    showText: boolean;
     
     // Text settings
     text: {
@@ -103,9 +104,10 @@ export const defaultCanvasSettings: CanvasSettings = {
     },
     showWatermark: true,
     watermarkSize: 24,
-    watermarkOpacity: 1,
+    watermarkOpacity: 0.3,
     shadowIntensity: 24,
     exportQuality: 0.8,
+    showText: true,
     
     text: {
         fontSize: 88,

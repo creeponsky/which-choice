@@ -239,9 +239,9 @@ export const renderCanvas = (
         let x = actualPadding.left;
         
         // 如果文字在顶部，计算图片应该下移的距离
-        const baseLetterHeight = Math.max(settings.text.fontSize, maxHeight * 0.1) * 1.2;
-        const verticalLetterGap = (settings.text.letterSpacing / 300) * maxHeight * 0.5;
-        const totalLetterOffset = settings.textPosition === "top" ? (baseLetterHeight * scale + verticalLetterGap * scale) : 0;
+        const baseLetterHeight = settings.showText ? Math.max(settings.text.fontSize, maxHeight * 0.1) * 1.2 : 0;
+        const verticalLetterGap = settings.showText ? (settings.text.letterSpacing / 300) * maxHeight * 0.5 : 0;
+        const totalLetterOffset = settings.showText && settings.textPosition === "top" ? (baseLetterHeight * scale + verticalLetterGap * scale) : 0;
         
         // 图片的Y坐标，考虑标题空间和文字位置
         const imageY = actualPadding.top + (settings.title.text ? titleSpace : 0) + totalLetterOffset;
@@ -283,57 +283,59 @@ export const renderCanvas = (
             ctx.drawImage(img, x, imageY, width, height);
             ctx.restore();
             
-            const letter = settings.text.letters?.[index] || String.fromCharCode(65 + index);
-            
-            // 获取字母颜色设置
-            const letterColorSettings = settings.text.letterColors?.[index];
-            const useGradient = letterColorSettings?.useGradient !== undefined 
-                ? letterColorSettings.useGradient 
-                : settings.text.useGradient;
-            
-            // 计算字母大小
-            const baseWidth = width / scale;
-            const baseFontSize = Math.min(
-                Math.max(settings.text.fontSize, baseWidth * 0.15), 
-                settings.text.fontSize * 1.5
-            );
-            const letterFontSize = baseFontSize * scale;
-            
-            // 根据文字位置设置纵向位置
-            ctx.font = `bold ${letterFontSize}px Inter`;
-            
-            if (useGradient) {
-                // 使用渐变色
-                const gradientX = x + width / 2;
-                const gradientWidth = width * 0.8;
-                const gradient = ctx.createLinearGradient(
-                    gradientX - gradientWidth / 2, 
-                    0, 
-                    gradientX + gradientWidth / 2, 
-                    0
+            if (settings.showText) {
+                const letter = settings.text.letters?.[index] || String.fromCharCode(65 + index);
+                
+                // 获取字母颜色设置
+                const letterColorSettings = settings.text.letterColors?.[index];
+                const useGradient = letterColorSettings?.useGradient !== undefined 
+                    ? letterColorSettings.useGradient 
+                    : settings.text.useGradient;
+                
+                // 计算字母大小
+                const baseWidth = width / scale;
+                const baseFontSize = Math.min(
+                    Math.max(settings.text.fontSize, baseWidth * 0.15), 
+                    settings.text.fontSize * 1.5
                 );
+                const letterFontSize = baseFontSize * scale;
                 
-                const color1 = letterColorSettings?.color || settings.text.color;
-                const color2 = letterColorSettings?.gradientColor || settings.text.gradientColor;
+                // 根据文字位置设置纵向位置
+                ctx.font = `bold ${letterFontSize}px Inter`;
                 
-                gradient.addColorStop(0, color1);
-                gradient.addColorStop(1, color2);
-                ctx.fillStyle = gradient;
-            } else {
-                // 使用纯色
-                ctx.fillStyle = letterColorSettings?.color || settings.text.color;
-            }
-            
-            ctx.textAlign = "center";
-            
-            if (settings.textPosition === "top") {
-                // 在图片上方显示字母
-                const letterY = imageY - verticalLetterGap * scale;
-                ctx.fillText(letter, x + width / 2, letterY);
-            } else {
-                // 在图片下方显示字母
-                const letterY = imageY + height + verticalLetterGap * scale + letterFontSize * 0.8;
-                ctx.fillText(letter, x + width / 2, letterY);
+                if (useGradient) {
+                    // 使用渐变色
+                    const gradientX = x + width / 2;
+                    const gradientWidth = width * 0.8;
+                    const gradient = ctx.createLinearGradient(
+                        gradientX - gradientWidth / 2, 
+                        0, 
+                        gradientX + gradientWidth / 2, 
+                        0
+                    );
+                    
+                    const color1 = letterColorSettings?.color || settings.text.color;
+                    const color2 = letterColorSettings?.gradientColor || settings.text.gradientColor;
+                    
+                    gradient.addColorStop(0, color1);
+                    gradient.addColorStop(1, color2);
+                    ctx.fillStyle = gradient;
+                } else {
+                    // 使用纯色
+                    ctx.fillStyle = letterColorSettings?.color || settings.text.color;
+                }
+                
+                ctx.textAlign = "center";
+                
+                if (settings.textPosition === "top") {
+                    // 在图片上方显示字母
+                    const letterY = imageY - verticalLetterGap * scale;
+                    ctx.fillText(letter, x + width / 2, letterY);
+                } else {
+                    // 在图片下方显示字母
+                    const letterY = imageY + height + verticalLetterGap * scale + letterFontSize * 0.8;
+                    ctx.fillText(letter, x + width / 2, letterY);
+                }
             }
             
             x += width + actualPadding.right;
@@ -348,17 +350,8 @@ export const renderCanvas = (
             const width = maxWidth;
             const height = width / aspectRatio;
             
-            // 计算字母大小
-            const baseWidth = width / scale;
-            const baseFontSize = Math.min(
-                Math.max(settings.text.fontSize, baseWidth * 0.15), 
-                settings.text.fontSize * 1.5
-            );
-            const letterFontSize = baseFontSize * scale;
-            const verticalGap = (settings.text.letterSpacing / 300) * height * 0.5;
-            
             // 绘制字母（如果位置是top）
-            if (settings.textPosition === "top") {
+            if (settings.showText && settings.textPosition === "top") {
                 const letter = settings.text.letters?.[index] || String.fromCharCode(65 + index);
                 
                 // 获取字母颜色设置
@@ -366,6 +359,15 @@ export const renderCanvas = (
                 const useGradient = letterColorSettings?.useGradient !== undefined 
                     ? letterColorSettings.useGradient 
                     : settings.text.useGradient;
+                
+                // 计算字母大小
+                const baseWidth = width / scale;
+                const baseFontSize = Math.min(
+                    Math.max(settings.text.fontSize, baseWidth * 0.15), 
+                    settings.text.fontSize * 1.5
+                );
+                const letterFontSize = baseFontSize * scale;
+                const verticalGap = (settings.text.letterSpacing / 300) * height * 0.5;
                 
                 ctx.font = `bold ${letterFontSize}px Inter`;
                 
@@ -431,7 +433,7 @@ export const renderCanvas = (
             ctx.restore();
             
             // 绘制字母（如果位置是bottom）
-            if (settings.textPosition === "bottom") {
+            if (settings.showText && settings.textPosition === "bottom") {
                 const letter = settings.text.letters?.[index] || String.fromCharCode(65 + index);
                 
                 // 获取字母颜色设置
@@ -439,6 +441,15 @@ export const renderCanvas = (
                 const useGradient = letterColorSettings?.useGradient !== undefined 
                     ? letterColorSettings.useGradient 
                     : settings.text.useGradient;
+                
+                // 计算字母大小
+                const baseWidth = width / scale;
+                const baseFontSize = Math.min(
+                    Math.max(settings.text.fontSize, baseWidth * 0.15), 
+                    settings.text.fontSize * 1.5
+                );
+                const letterFontSize = baseFontSize * scale;
+                const verticalGap = (settings.text.letterSpacing / 300) * height * 0.5;
                 
                 ctx.font = `bold ${letterFontSize}px Inter`;
                 
