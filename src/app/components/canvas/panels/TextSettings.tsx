@@ -15,13 +15,13 @@ interface TextSettingsProps {
     setLetters: React.Dispatch<React.SetStateAction<string[]>>;
     imagesCount: number;
     textColor: string;
-    setTextColor: (color: string) => void; 
+    setTextColor: (color: string) => void;
     textGradientColor: string;
     setTextGradientColor: (color: string) => void;
     useGradient: boolean;
     setUseGradient: (value: boolean) => void;
-    letterColors: Record<number, {color: string, gradientColor?: string, useGradient?: boolean}>;
-    setLetterColors: React.Dispatch<React.SetStateAction<Record<number, {color: string, gradientColor?: string, useGradient?: boolean}>>>;
+    letterColors: Record<number, { color: string, gradientColor?: string, useGradient?: boolean }>;
+    setLetterColors: React.Dispatch<React.SetStateAction<Record<number, { color: string, gradientColor?: string, useGradient?: boolean }>>>;
 }
 
 export function TextSettings({
@@ -43,12 +43,12 @@ export function TextSettings({
 }: TextSettingsProps) {
     const [colorPickerOpen, setColorPickerOpen] = useState<number | null>(null);
     const [gradientPickerOpen, setGradientPickerOpen] = useState<number | null>(null);
-    
+
     // 重置单独颜色设置，恢复为全局设置
     const resetLetterColors = () => {
         setLetterColors({});
     };
-    
+
     // 更新单独字母颜色
     const updateLetterColor = (index: number, color: string) => {
         setLetterColors(prev => ({
@@ -56,7 +56,7 @@ export function TextSettings({
             [index]: { ...prev[index], color }
         }));
     };
-    
+
     // 更新单独字母渐变色
     const updateLetterGradientColor = (index: number, gradientColor: string) => {
         setLetterColors(prev => ({
@@ -64,13 +64,13 @@ export function TextSettings({
             [index]: { ...prev[index], gradientColor }
         }));
     };
-    
+
     // 切换单独字母渐变状态
     const toggleLetterGradient = (index: number, value: boolean) => {
         setLetterColors(prev => ({
             ...prev,
-            [index]: { 
-                ...prev[index], 
+            [index]: {
+                ...prev[index],
                 useGradient: value,
                 color: prev[index]?.color || textColor,
                 gradientColor: prev[index]?.gradientColor || textGradientColor
@@ -118,60 +118,60 @@ export function TextSettings({
                     <Palette className="h-4 w-4" />
                     <span>Letter Color</span>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
-                    <div 
-                        className="w-10 h-10 rounded border cursor-pointer" 
+                    <div
+                        className="w-10 h-10 rounded border-[2px] border-zinc-300 cursor-pointer shadow-lg hover:shadow-xl transition-shadow"
                         style={{ backgroundColor: textColor }}
                         onClick={() => setColorPickerOpen(colorPickerOpen === -1 ? null : -1)}
                     />
-                    
+
                     <div className="flex items-center space-x-2">
-                        <Switch 
+                        <Switch
                             id="use-gradient"
                             checked={useGradient}
                             onCheckedChange={setUseGradient}
                         />
                         <Label htmlFor="use-gradient">Use Gradient</Label>
                     </div>
-                    
+
                     {useGradient && (
-                        <div 
-                            className="w-10 h-10 rounded border cursor-pointer" 
+                        <div
+                            className="w-10 h-10 rounded border-[2px] border-zinc-300 cursor-pointer shadow-lg hover:shadow-xl transition-shadow"
                             style={{ backgroundColor: textGradientColor }}
                             onClick={() => setGradientPickerOpen(gradientPickerOpen === -1 ? null : -1)}
                         />
                     )}
                 </div>
-                
+
                 {colorPickerOpen === -1 && (
                     <div className="absolute z-10">
-                        <div 
-                            className="fixed inset-0" 
+                        <div
+                            className="fixed inset-0"
                             onClick={() => setColorPickerOpen(null)}
                         />
-                        <SketchPicker 
+                        <SketchPicker
                             color={textColor}
                             onChange={(color: any) => setTextColor(color.hex)}
                         />
                     </div>
                 )}
-                
+
                 {gradientPickerOpen === -1 && (
                     <div className="absolute z-10">
-                        <div 
-                            className="fixed inset-0" 
+                        <div
+                            className="fixed inset-0"
                             onClick={() => setGradientPickerOpen(null)}
                         />
-                        <SketchPicker 
+                        <SketchPicker
                             color={textGradientColor}
                             onChange={(color: any) => setTextGradientColor(color.hex)}
                         />
                     </div>
                 )}
-                
+
                 <div className="flex justify-end">
-                    <button 
+                    <button
                         onClick={resetLetterColors}
                         className="text-xs text-blue-500 hover:text-blue-700"
                     >
@@ -196,59 +196,58 @@ export function TextSettings({
                                         return newLetters;
                                     });
                                 }}
-                                className="h-8 text-center px-0"
+                                className="h-8 text-center px-1"
                             />
-                            
-                            <div className="flex items-center justify-center gap-1">
-                                <div 
-                                    className="w-6 h-6 rounded border cursor-pointer" 
-                                    style={{ 
-                                        backgroundColor: letterColors[index]?.color || textColor,
-                                        borderColor: colorPickerOpen === index ? '#3b82f6' : 'transparent'
-                                    }}
-                                    onClick={() => setColorPickerOpen(colorPickerOpen === index ? null : index)}
-                                />
-                                
-                                {(letterColors[index]?.useGradient || (useGradient && !letterColors[index])) && (
-                                    <div 
-                                        className="w-6 h-6 rounded border cursor-pointer" 
-                                        style={{ 
-                                            backgroundColor: letterColors[index]?.gradientColor || textGradientColor,
-                                            borderColor: gradientPickerOpen === index ? '#3b82f6' : 'transparent'
+                            <div className="group flex flex-col items-center justify-center gap-1">
+                                <div className="flex items-center justify-center gap-1">
+                                    <div
+                                        className="w-6 h-6 rounded border border-zinc-300 cursor-pointer shadow-lg hover:shadow-2xl transition-shadow"
+                                        style={{
+                                            backgroundColor: letterColors[index]?.color || textColor,   
                                         }}
-                                        onClick={() => setGradientPickerOpen(gradientPickerOpen === index ? null : index)}
+                                        onClick={() => setColorPickerOpen(colorPickerOpen === index ? null : index)}
                                     />
-                                )}
-                                
-                                <Switch 
-                                    checked={letterColors[index]?.useGradient !== undefined 
-                                        ? letterColors[index]?.useGradient 
+
+                                    {(letterColors[index]?.useGradient || (useGradient && !letterColors[index])) && (
+                                        <div
+                                            className="w-6 h-6 rounded border border-zinc-300 cursor-pointer shadow-lg hover:shadow-2xl transition-shadow"
+                                            style={{
+                                                backgroundColor: letterColors[index]?.gradientColor || textGradientColor,
+                                            }}
+                                            onClick={() => setGradientPickerOpen(gradientPickerOpen === index ? null : index)}
+                                        />
+                                    )}
+                                </div>
+                                <Switch
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                    checked={letterColors[index]?.useGradient !== undefined
+                                        ? letterColors[index]?.useGradient
                                         : useGradient}
                                     onCheckedChange={(value) => toggleLetterGradient(index, value)}
-                                    className="h-4 w-7"
                                 />
                             </div>
-                            
+
+
                             {colorPickerOpen === index && (
                                 <div className="absolute z-10">
-                                    <div 
-                                        className="fixed inset-0" 
+                                    <div
+                                        className="fixed inset-0"
                                         onClick={() => setColorPickerOpen(null)}
                                     />
-                                    <SketchPicker 
+                                    <SketchPicker
                                         color={letterColors[index]?.color || textColor}
                                         onChange={(color: any) => updateLetterColor(index, color.hex)}
                                     />
                                 </div>
                             )}
-                            
+
                             {gradientPickerOpen === index && (
                                 <div className="absolute z-10">
-                                    <div 
-                                        className="fixed inset-0" 
+                                    <div
+                                        className="fixed inset-0"
                                         onClick={() => setGradientPickerOpen(null)}
                                     />
-                                    <SketchPicker 
+                                    <SketchPicker
                                         color={letterColors[index]?.gradientColor || textGradientColor}
                                         onChange={(color: any) => updateLetterGradientColor(index, color.hex)}
                                     />
