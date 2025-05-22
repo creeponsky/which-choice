@@ -1,29 +1,16 @@
 # Which Choice
 
-[Project Description - Add a brief and engaging description of your project here!]
+A simple yet powerful image comparison tool that helps you create beautiful comparison images in seconds. Perfect for product comparisons, design choices, or any scenario where you need to showcase multiple options side by side.
 
-## Features
-
-- [Feature 1 - e.g., Easily compare options]
-- [Feature 2 - e.g., Customizable criteria]
-- [Feature 3 - e.g., Save and share your choices]
+Try it now and transform your decision-making process into a visually appealing experience!
 
 ## Preview
 
-![App Screenshot 1](./docs/images/screenshot1.png)
-*Caption for screenshot 1*
+![App Screenshot 1](./docs/images/screenshot1.jpg)
 
-![App Screenshot 2](./docs/images/screenshot2.png)
-*Caption for screenshot 2*
-
-(Add more screenshots or a GIF of the app in action!)
+![App Screenshot 2](./docs/images/screenshot2.jpg)
 
 ## Getting Started
-
-### Prerequisites
-
-- Node.js (v18.x or later recommended)
-- npm or yarn or pnpm or bun
 
 ### Installation & Setup
 
