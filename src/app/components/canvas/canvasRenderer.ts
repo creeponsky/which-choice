@@ -240,7 +240,7 @@ export const renderCanvas = (
         
         // 如果文字在顶部，计算图片应该下移的距离
         const baseLetterHeight = settings.showText ? Math.max(settings.text.fontSize, maxHeight * 0.1) * 1.2 : 0;
-        const verticalLetterGap = settings.showText ? (settings.text.letterSpacing / 300) * maxHeight * 0.5 : 0;
+        const verticalLetterGap = settings.showText ? (settings.text.letterSpacing / 300) * maxHeight * 0.2 : 0;
         const totalLetterOffset = settings.showText && settings.textPosition === "top" ? (baseLetterHeight * scale + verticalLetterGap * scale) : 0;
         
         // 图片的Y坐标，考虑标题空间和文字位置
@@ -367,7 +367,7 @@ export const renderCanvas = (
                     settings.text.fontSize * 1.5
                 );
                 const letterFontSize = baseFontSize * scale;
-                const verticalGap = (settings.text.letterSpacing / 300) * height * 0.5;
+                const verticalGap = (settings.text.letterSpacing / 300) * height * 0.2;
                 
                 ctx.font = `bold ${letterFontSize}px Inter`;
                 
@@ -449,7 +449,7 @@ export const renderCanvas = (
                     settings.text.fontSize * 1.5
                 );
                 const letterFontSize = baseFontSize * scale;
-                const verticalGap = (settings.text.letterSpacing / 300) * height * 0.5;
+                const verticalGap = (settings.text.letterSpacing / 300) * height * 0.2;
                 
                 ctx.font = `bold ${letterFontSize}px Inter`;
                 
