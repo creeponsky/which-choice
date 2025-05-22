@@ -146,9 +146,20 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                 actualPadding: params.actualPadding
             });
 
-            // 计算预览时的缩放比例，以适应视窗高度
+            // 获取容器尺寸
+            const container = canvas.parentElement;
+            if (!container) return;
+            
+            // 计算预览时的缩放比例，同时考虑宽度和高度
             const maxPreviewHeight = window.innerHeight - 200; // 留出一些边距
-            const previewScale = Math.min(1, maxPreviewHeight / params.height);
+            const maxPreviewWidth = container.clientWidth - 40; // 留出一些边距
+            
+            // 计算宽度和高度的缩放比例
+            const scaleWidth = maxPreviewWidth / params.width;
+            const scaleHeight = maxPreviewHeight / params.height;
+            
+            // 使用较小的缩放比例，确保图片完全显示
+            const previewScale = Math.min(1, scaleWidth, scaleHeight);
             
             // 设置 canvas 的实际尺寸
             canvas.width = params.width;
@@ -174,6 +185,13 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
         };
 
         updateCanvas();
+
+        // 添加窗口大小变化的监听
+        const handleResize = () => {
+            updateCanvas();
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, [images, settings, theme, letters]);
 
     // Download image function
@@ -235,11 +253,10 @@ export function ImageCanvas({ images }: ImageCanvasProps) {
                 />
 
                 <div className="flex-1">
-                    <div className="relative flex items-center justify-center min-h-[200px]">
+                    <div className="relative flex items-center justify-center min-h-[200px] p-4">
                         <canvas
                             ref={canvasRef}
                             className="rounded-lg"
-                            style={{ maxWidth: '100%' }}
                         />
                         {images.length > 0 && (
                             <Button
