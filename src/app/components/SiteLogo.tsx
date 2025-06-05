@@ -1,35 +1,34 @@
-'use client';
+"use client";
 
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 interface SiteLogoProps {
-  variant?: 'glassmorphism' | 'contrast';
+  variant?: "glassmorphism" | "contrast";
   showDownloadButton?: boolean;
 }
 
-export function SiteLogo({ 
-  variant = 'glassmorphism', 
-  showDownloadButton = true 
-}: SiteLogoProps) {
+export function SiteLogo({ variant = "glassmorphism", showDownloadButton = true }: SiteLogoProps) {
   // 可以添加内部状态来切换variant
   const [currentVariant, setCurrentVariant] = useState(variant);
 
   const handleDownload = () => {
-    const logoContainer = document.getElementById('logo-container');
+    const logoContainer = document.getElementById("logo-container");
     if (logoContainer) {
-      import('html2canvas').then(html2canvas => {
-        html2canvas.default(logoContainer, {
-          scale: 3,
-          backgroundColor: null,
-          useCORS: true,
-          allowTaint: true
-        }).then(canvas => {
-          const link = document.createElement('a');
-          link.download = 'which-choice-logo.png';
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-        });
+      import("html2canvas").then((html2canvas) => {
+        html2canvas
+          .default(logoContainer, {
+            scale: 3,
+            backgroundColor: null,
+            useCORS: true,
+            allowTaint: true,
+          })
+          .then((canvas) => {
+            const link = document.createElement("a");
+            link.download = "which-choice-logo.png";
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+          });
       });
     }
   };
@@ -37,7 +36,7 @@ export function SiteLogo({
   return (
     <div className="flex items-center">
       <div id="logo-container" className="inline-flex items-center">
-        {currentVariant === 'glassmorphism' ? (
+        {currentVariant === "glassmorphism" ? (
           // 毛玻璃效果版本
           <div className="relative flex items-center gap-1 sm:gap-2 rounded-xl p-1.5 sm:p-2.5 border border-zinc-200 dark:border-zinc-700 bg-gradient-to-r from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-800 shadow-sm group hover:shadow-md transition-all duration-300">
             {/* Regular dots background pattern */}
@@ -46,11 +45,11 @@ export function SiteLogo({
                 {Array.from({ length: 6 }).map((_, row) => (
                   <div key={`row-${row}`} className="flex justify-around">
                     {Array.from({ length: 12 }).map((_, col) => (
-                      <div 
-                        key={`dot-${row}-${col}`} 
+                      <div
+                        key={`dot-${row}-${col}`}
                         className="w-1 h-1 mt-2 mx-1 rounded-full bg-zinc-300 dark:bg-zinc-500"
                         style={{
-                          opacity: 0.3
+                          opacity: 0.3,
                         }}
                       />
                     ))}
@@ -58,21 +57,21 @@ export function SiteLogo({
                 ))}
               </div>
             </div>
-            
+
             {/* Left side (which) with enhanced glassmorphism */}
             <div className="relative px-2 py-1 rounded-lg backdrop-blur-md bg-zinc-200/40 dark:bg-zinc-700/40 z-10 shadow-sm group-hover:shadow transition-all duration-300">
               <span className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-zinc-700 dark:text-zinc-200">
                 which
               </span>
             </div>
-            
+
             {/* Right side (choice) with enhanced glassmorphism */}
             <div className="relative px-2 py-1 rounded-lg backdrop-blur-md bg-zinc-100/40 dark:bg-zinc-800/40 z-10 shadow-sm group-hover:shadow transition-all duration-300">
               <span className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-zinc-800 dark:text-zinc-100">
                 choice
               </span>
             </div>
-            
+
             {/* Question mark inside the container */}
             <div className="relative ml-1 mr-1 z-10">
               <span className="text-xl sm:text-2xl md:text-3xl font-serif italic text-zinc-700 dark:text-zinc-300">
@@ -91,21 +90,21 @@ export function SiteLogo({
                 ))}
               </div>
             </div>
-            
+
             {/* Left side (which) */}
             <div className="relative px-2 py-1 rounded-lg bg-zinc-800 dark:bg-zinc-300 z-10">
               <span className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-zinc-100 dark:text-zinc-900">
                 which
               </span>
             </div>
-            
+
             {/* Right side (choice) */}
             <div className="relative px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-700 z-10">
               <span className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-zinc-800 dark:text-zinc-100">
                 choice
               </span>
             </div>
-            
+
             {/* Question mark inside the container */}
             <div className="relative ml-1 mr-1 z-10">
               <span className="text-xl sm:text-2xl md:text-3xl font-serif italic text-zinc-700 dark:text-zinc-300">
@@ -133,4 +132,4 @@ export function SiteLogo({
       )} */}
     </div>
   );
-} 
+}
